@@ -40,6 +40,8 @@ class Game {
     val killDifference = mutableStateListOf(0)
     var maxKillDifference by mutableStateOf(1)
 
+    var isFinished by mutableStateOf(false)
+
     fun getPlayers(team: Team): Array<Summoner> {
         return when (team) {
             Team.ORDER -> {
@@ -151,7 +153,16 @@ class Game {
                 println(count++)
                 prevTime = newTime
                 val time = Date().time
-                val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                val response = try {
+                    client.send(request, HttpResponse.BodyHandlers.ofString())
+                } catch (e: Exception) {
+                    if(e is java.net.ConnectException){
+                        isFinished = true
+                        break
+                    } else {
+                        throw e
+                    }
+                }
                 val eventList = Json.parseToJsonElement(response.body()).jsonObject["Events"]!!.jsonArray
                 eventList.forEach {
                     val event = it.jsonObject
