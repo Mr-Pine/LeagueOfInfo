@@ -35,7 +35,6 @@ fun SummonerComposable(
                 ) else Modifier
             ).fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically
     ) {
-        println("SummonerComposable")
         val championIcon = summoner.entity.championIcon
         if (championIcon != null) {
             Image(

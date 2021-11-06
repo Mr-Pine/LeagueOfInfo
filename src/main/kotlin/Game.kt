@@ -38,7 +38,7 @@ class Game {
     val events = mutableStateListOf<ActionEvent>()
 
     val killDifference = mutableStateListOf(0)
-    var maxKillDifference by mutableStateOf(0)
+    var maxKillDifference by mutableStateOf(1)
 
     fun getPlayers(team: Team): Array<Summoner> {
         return when (team) {
@@ -229,7 +229,7 @@ class Game {
 
                                 val lastKD = killDifference[killDifference.lastIndex]
                                 val newKD = lastKD + if(killer.team == Team.ORDER) 1 else -1
-                                killDifference[killDifference.size] = newKD
+                                killDifference.add(newKD)
 
                                 maxKillDifference = max(maxKillDifference, newKD.absoluteValue)
 

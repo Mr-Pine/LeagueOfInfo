@@ -3,10 +3,12 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
@@ -49,162 +51,185 @@ fun App(game: Game, windowSize: DpSize) {
                 .then(if (windowSize.isSpecified) Modifier.size(windowSize) else Modifier),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                val verticalScrollState = rememberScrollState()
-                Column(Modifier.fillMaxWidth().verticalScroll(verticalScrollState)) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, end = 12.dp, start = 4.dp),
-                        elevation = 4.dp
-                    ) {
-                        Row() {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().weight(1f).background(orderColor)
-                            ) {
-                                Text(
-                                    "Team ORDER",
-                                    modifier = Modifier.fillMaxWidth().background(orderColor.darken(contrast / 2))
-                                        .padding(4.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalArrangement = Arrangement.SpaceEvenly
-                                ) {
-                                    game.getPlayers(Team.ORDER).forEach { summoner ->
-                                        SummonerComposable(
-                                            summoner,
-                                            summoner.kda.total,
-                                            orderColor.darken(contrast / 3),
-                                            game.summonerSelected
-                                        ) {
-                                            game.summonerSelected = it
-                                        }
-                                    }
-                                }
-                            }
-                            Column(
-                                modifier = Modifier.fillMaxWidth().weight(1f).background(chaosColor)
-                            ) {
-                                Text(
-                                    "Team CHAOS",
-                                    modifier = Modifier.fillMaxWidth().background(chaosColor.darken(contrast / 2))
-                                        .padding(4.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalArrangement = Arrangement.SpaceAround
-                                ) {
-                                    game.getPlayers(Team.CHAOS).forEach { summoner ->
-                                        SummonerComposable(
-                                            summoner,
-                                            summoner.kda.total,
-                                            chaosColor.darken(contrast / 3),
-                                            game.summonerSelected
-                                        ) {
-                                            game.summonerSelected = it
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    UICard(
-                        modifier = Modifier.fillMaxWidth(),
-                        title = "Settings",
-                        titleColor = mainColor.darken(contrast / 2)
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                            ColorPickerWidget(
-                                mainColor,
-                                onColorChange = { colorPicked ->
-                                    mainColor = colorPicked
-                                },
-                                setContrast = {
-                                    CoroutineScope(Dispatchers.Default).launch {
-                                        contrast = it
-                                    }
-                                },
-                                currentContrast = contrast,
-                                modifier = Modifier.widthIn(max = 300.dp)
+            UIColumn(contrast) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, end = 12.dp, start = 4.dp),
+                    elevation = 4.dp
+                ) {
+                    Row() {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().weight(1f).background(orderColor)
+                        ) {
+                            Text(
+                                "Team ORDER",
+                                modifier = Modifier.fillMaxWidth().background(orderColor.darken(contrast / 2))
+                                    .padding(4.dp),
+                                textAlign = TextAlign.Center
                             )
-                            /*Spacer(Modifier.height(16.dp))
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly){
-                                Button(onClick = {openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=bug&template=bug_report.md&title="))}, colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))){
-                                    Text("Report Bug")
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                game.getPlayers(Team.ORDER).forEach { summoner ->
+                                    SummonerComposable(
+                                        summoner,
+                                        summoner.kda.total,
+                                        orderColor.darken(contrast / 3),
+                                        game.summonerSelected
+                                    ) {
+                                        game.summonerSelected = it
+                                    }
                                 }
-                                Button(onClick = {openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=enhancement&template=feature_request.md&title="))}, colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))){
-                                    Text("Suggest Feature")
+                            }
+                        }
+                        Column(
+                            modifier = Modifier.fillMaxWidth().weight(1f).background(chaosColor)
+                        ) {
+                            Text(
+                                "Team CHAOS",
+                                modifier = Modifier.fillMaxWidth().background(chaosColor.darken(contrast / 2))
+                                    .padding(4.dp),
+                                textAlign = TextAlign.Center
+                            )
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.SpaceAround
+                            ) {
+                                game.getPlayers(Team.CHAOS).forEach { summoner ->
+                                    SummonerComposable(
+                                        summoner,
+                                        summoner.kda.total,
+                                        chaosColor.darken(contrast / 3),
+                                        game.summonerSelected
+                                    ) {
+                                        game.summonerSelected = it
+                                    }
                                 }
-                            }*/
+                            }
                         }
                     }
                 }
-                VerticalScrollbar(
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    adapter = rememberScrollbarAdapter(verticalScrollState),
-                    style = defaultScrollbarStyle().copy(
-                        unhoverColor = mainColor.darken(contrast / 2).copy(alpha = 0.5f),
-                        hoverColor = mainColor.darken(contrast / 2)
-                    )
-                )
+                UICard(
+                    modifier = Modifier.fillMaxWidth(),
+                    title = "Settings",
+                    titleColor = mainColor.darken(contrast / 2)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        ColorPickerWidget(
+                            mainColor,
+                            onColorChange = { colorPicked ->
+                                mainColor = colorPicked
+                            },
+                            setContrast = {
+                                CoroutineScope(Dispatchers.Default).launch {
+                                    contrast = it
+                                }
+                            },
+                            currentContrast = contrast,
+                            modifier = Modifier.widthIn(max = 300.dp)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                            Button(
+                                onClick = { openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=bug&template=bug_report.md&title=")) },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))
+                            ) {
+                                Text("Report Bug")
+                            }
+                            Button(
+                                onClick = { openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=enhancement&template=feature_request.md&title=")) },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))
+                            ) {
+                                Text("Suggest Feature")
+                            }
+                        }
+                    }
+                }
             }
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                val verticalScrollState = rememberScrollState()
-                Column(Modifier.fillMaxWidth().verticalScroll(verticalScrollState)) {
-                    UICard(title = "Events", titleColor = mainColor.darken(contrast / 2)) {
-                        Column() {
-                            game.events.forEach { event ->
-                                EventComposable(event, chaosColor, orderColor, game.summonerSelected)
-                            }
-                        }
-                    }
-                    UICard(
-                        modifier = Modifier.height(500.dp),
-                        titleColor = mainColor.darken(contrast / 2),
-                        title = "Kill difference",
-                        noPadding = true
-                    ) {
-                        Column(Modifier.background(orderColor)) {
-                            Box(modifier = Modifier.fillMaxWidth().background(orderColor).weight(1f))
-                            Box(modifier = Modifier.fillMaxWidth().background(chaosColor).weight(1f))
-                        }
-                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                            val canvasHeight = constraints.maxHeight
-                            val canvasWidth = constraints.maxWidth
-                            val centerOffset = Offset(0f, canvasHeight / 2f)
-
-                            val killWidth = canvasWidth / game.killDifference.size
-                            val killHeight = (canvasHeight - 100) / 2 / game.maxKillDifference
-
-                            for (i in 0 until game.killDifference.lastIndex) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = mainColor,
-                                    border = BorderStroke(2.dp, mainColor.darken(contrast)),
-                                    modifier = Modifier.size(12.dp).offset {
-                                        (Offset(
-                                            (killWidth * i).toFloat(),
-                                            (killHeight * game.killDifference[i]).toFloat()
-                                        ) + centerOffset + with(localDensity) {
-                                            Offset(
-                                                -3.dp.toPx(),
-                                                -3.dp.toPx()
-                                            )
-                                        }).round()
-                                    }) {}
+            UIColumn(contrast) {
+                UICard(title = "Lane KDA", titleColor = mainColor.darken(contrast / 2)) {
+                    Column (Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                        val orderPlayers = game.getPlayers(Team.ORDER)
+                        val chaosPlayers = game.getPlayers(Team.CHAOS)
+                        for(i in 0..orderPlayers.lastIndex) {
+                            val orderPlayer = orderPlayers[i]
+                            if(i > chaosPlayers.lastIndex) continue
+                            val chaosPlayer = chaosPlayers[i]
+                            val orderKDA = orderPlayer.kda.against[chaosPlayer.name] ?: KDAData()
+                            val chaosKDA = chaosPlayer.kda.against[orderPlayer.name] ?: KDAData()
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            ) {
+                                Column(Modifier.fillMaxWidth().background(orderColor).padding(8.dp).weight(1f)) {
+                                    SummonerComposable(
+                                        summoner = orderPlayer,
+                                        kda = orderKDA,
+                                        backgroundColor = orderColor.darken(contrast / 3),
+                                        summonerSelected = game.summonerSelected,
+                                        onSummonerSelect = {game.summonerSelected = it}
+                                    )
+                                }
+                                Column(Modifier.fillMaxWidth().background(chaosColor).padding(8.dp).weight(1f)) {
+                                    SummonerComposable(
+                                        summoner = chaosPlayer,
+                                        kda = chaosKDA,
+                                        backgroundColor = chaosColor.darken(contrast / 3),
+                                        summonerSelected = game.summonerSelected,
+                                        onSummonerSelect = {game.summonerSelected = it}
+                                    )
+                                }
                             }
                         }
                     }
                 }
-                VerticalScrollbar(
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    adapter = rememberScrollbarAdapter(verticalScrollState),
-                    style = defaultScrollbarStyle().copy(
-                        unhoverColor = mainColor.darken(contrast / 2).copy(alpha = 0.5f),
-                        hoverColor = mainColor.darken(contrast / 2)
-                    )
-                )
+            }
+            UIColumn(contrast) {
+                UICard(title = "Events", titleColor = mainColor.darken(contrast / 2)) {
+                    Column() {
+                        game.events.forEach { event ->
+                            EventComposable(event, chaosColor, orderColor, game.summonerSelected)
+                        }
+                    }
+                }
+                UICard(
+                    modifier = Modifier.height(500.dp),
+                    titleColor = mainColor.darken(contrast / 2),
+                    title = "Kill difference",
+                    noPadding = true
+                ) {
+                    Column(Modifier.background(orderColor)) {
+                        Box(modifier = Modifier.fillMaxWidth().background(orderColor).weight(1f))
+                        Box(modifier = Modifier.fillMaxWidth().background(chaosColor).weight(1f))
+                    }
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val canvasHeight = constraints.maxHeight
+                        val canvasWidth = constraints.maxWidth
+                        val centerOffset = Offset(0f, canvasHeight / 2f)
+
+                        val killWidth = canvasWidth / game.killDifference.size
+                        println((canvasHeight - 100) / 2 / game.maxKillDifference)
+                        val killHeight = (canvasHeight - 100) / 2 / game.maxKillDifference
+
+                        for (i in 0 until game.killDifference.size) {
+                            Surface(
+                                shape = CircleShape,
+                                color = mainColor,
+                                border = BorderStroke(2.dp, mainColor.darken(contrast)),
+                                modifier = Modifier.size(12.dp).offset {
+                                    (Offset(
+                                        (killWidth * i).toFloat(),
+                                        (killHeight * game.killDifference[i]).toFloat()
+                                    ) + centerOffset + with(localDensity) {
+                                        Offset(
+                                            -3.dp.toPx(),
+                                            -3.dp.toPx()
+                                        )
+                                    }).round()
+                                }) {}
+                        }
+                    }
+                }
             }
         }
     }
@@ -266,7 +291,24 @@ fun UICard(
     }
 }
 
-/*
+@Composable
+fun RowScope.UIColumn(contrast: Float, content: @Composable ColumnScope.() -> Unit) {
+    Box(Modifier.fillMaxWidth().weight(1f)) {
+        val verticalScrollState = rememberScrollState()
+        Column(Modifier.fillMaxWidth().verticalScroll(verticalScrollState)) {
+            content()
+        }
+        VerticalScrollbar(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            adapter = rememberScrollbarAdapter(verticalScrollState),
+            style = defaultScrollbarStyle().copy(
+                unhoverColor = mainColor.darken(contrast / 2).copy(alpha = 0.5f),
+                hoverColor = mainColor.darken(contrast / 2)
+            )
+        )
+    }
+}
+
 fun openWebpage(uri: URI): Boolean {
     val desktop = if (Desktop.isDesktopSupported()) Desktop.getDesktop() else null
     if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
@@ -279,4 +321,3 @@ fun openWebpage(uri: URI): Boolean {
     }
     return false
 }
-*/
