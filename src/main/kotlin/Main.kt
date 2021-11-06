@@ -1,43 +1,35 @@
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-import androidx.compose.desktop.DesktopMaterialTheme
-import color_picker.ColorPickerWidget
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.DrawStyle
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import color_picker.ColorPickerWidget
 import design.darken
 import design.withLightness
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.Image.Companion.makeFromEncoded
+import java.awt.Desktop
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import javax.imageio.ImageIO
 import kotlin.math.sqrt
+
 
 @Composable
 @Preview
@@ -136,6 +128,15 @@ fun App(game: Game, windowSize: DpSize) {
                                 currentContrast = contrast,
                                 modifier = Modifier.widthIn(max = 300.dp)
                             )
+                            /*Spacer(Modifier.height(16.dp))
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly){
+                                Button(onClick = {openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=bug&template=bug_report.md&title="))}, colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))){
+                                    Text("Report Bug")
+                                }
+                                Button(onClick = {openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=enhancement&template=feature_request.md&title="))}, colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))){
+                                    Text("Suggest Feature")
+                                }
+                            }*/
                         }
                     }
                 }
@@ -264,3 +265,18 @@ fun UICard(
         }
     }
 }
+
+/*
+fun openWebpage(uri: URI): Boolean {
+    val desktop = if (Desktop.isDesktopSupported()) Desktop.getDesktop() else null
+    if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+        try {
+            desktop.browse(uri)
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    return false
+}
+*/
