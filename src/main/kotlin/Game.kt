@@ -85,7 +85,7 @@ class Game {
 
         val client = HttpClient.newBuilder().sslContext(sc).build()
         val request =
-            HttpRequest.newBuilder().uri(URI.create("https://127.0.0.1:2999/liveclientdata/allgamedata")).GET().build()
+            HttpRequest.newBuilder().uri(URI.create("http://127.0.0.1:2999/liveclientdata/allgamedata")).GET().build()
         scope.launch(Dispatchers.Main) {
             var responseJson: JsonElement
             while (true) {
@@ -141,18 +141,11 @@ class Game {
 
     private fun watchEvents(client: HttpClient) {
         val request =
-            HttpRequest.newBuilder().uri(URI.create("https://127.0.0.1:2999/liveclientdata/eventdata")).GET().build()
+            HttpRequest.newBuilder().uri(URI.create("http://127.0.0.1:2999/liveclientdata/eventdata")).GET().build()
         scope.launch(Dispatchers.IO) {
             println("hello")
-            var prevTime = Date().time
-            var count = 0
             while (true) {
                 delay(3000)
-                val newTime = Date().time
-                println(newTime - prevTime)
-                println(count++)
-                prevTime = newTime
-                val time = Date().time
                 val response = try {
                     client.send(request, HttpResponse.BodyHandlers.ofString())
                 } catch (e: Exception) {
@@ -268,7 +261,6 @@ class Game {
                         lastEventIndex = eventIndex
                     }
                 }
-                println(Date().time - prevTime)
             }
         }
     }

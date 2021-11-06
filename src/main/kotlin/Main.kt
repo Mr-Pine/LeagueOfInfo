@@ -82,7 +82,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                 UIColumn(contrast) {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, end = 12.dp, start = 4.dp),
-                        elevation = 4.dp
+                        elevation = 4.dp, backgroundColor = mainColor
                     ) {
                         Row() {
                             Column(
@@ -229,7 +229,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                             if (allSummoners.any { it.name == game.summonerSelected }) {
                                 var selectedOne by remember { mutableStateOf(allSummoners.last { it.name == game.summonerSelected }) }
                                 var expanded by remember { mutableStateOf(false) }
-                                Row(horizontalArrangement = Arrangement.Center) {
+                                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                                     SummonerComposable(
                                         summoner = selectedOne,
                                         kda = selectedOne.kda.total,
@@ -237,7 +237,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                             contrast / 3
                                         ),
                                         summonerSelected = game.summonerSelected,
-                                        modifier = Modifier.widthIn(max = 400.dp)
+                                        modifier = Modifier.widthIn(max = 800.dp, min = 300.dp).fillMaxWidth(0.5f)
                                     ) {
                                         expanded = true
                                     }
@@ -272,7 +272,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                         val enemyKDA = enemy.kda.against[selectedOne.name] ?: KDAData()
                                         Row(
                                             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .clip(RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Column(
                                                 Modifier.fillMaxWidth().padding(8.dp).weight(1f)
@@ -302,12 +302,12 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                         }
                     }
                 }
-                UIColumn(contrast) {
+                UIColumn(contrast, 0.6f) {
                     UICard(title = "Events", titleColor = mainColor.darken(contrast / 2)) {
                         Column() {
-                            game.events.forEach { event ->
+                            /*game.events.forEach { event ->
                                 EventComposable(event, chaosColor, orderColor, game.summonerSelected)
-                            }
+                            }*/
                         }
                     }
                     UICard(
@@ -326,8 +326,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                             val centerOffset = Offset(0f, canvasHeight / 2f)
 
                             val killWidth = canvasWidth / game.killDifference.size
-                            println((canvasHeight - 100) / 2 / game.maxKillDifference)
-                            val killHeight = (canvasHeight - 100) / 2 / game.maxKillDifference
+                            val killHeight = (canvasHeight - 50) / 2 / game.maxKillDifference
 
                             for (i in 0 until game.killDifference.size) {
                                 Surface(
@@ -337,7 +336,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                     modifier = Modifier.size(12.dp).offset {
                                         (Offset(
                                             (killWidth * i).toFloat(),
-                                            (killHeight * game.killDifference[i]).toFloat()
+                                            -(killHeight * game.killDifference[i]).toFloat()
                                         ) + centerOffset + with(localDensity) {
                                             Offset(
                                                 -3.dp.toPx(),
@@ -412,8 +411,8 @@ fun UICard(
 }
 
 @Composable
-fun RowScope.UIColumn(contrast: Float, content: @Composable ColumnScope.() -> Unit) {
-    Box(Modifier.fillMaxWidth().weight(1f)) {
+fun RowScope.UIColumn(contrast: Float, weight: Float = 1f, content: @Composable ColumnScope.() -> Unit) {
+    Box(Modifier.fillMaxWidth().weight(weight)) {
         val verticalScrollState = rememberScrollState()
         Column(Modifier.fillMaxWidth().verticalScroll(verticalScrollState)) {
             content()

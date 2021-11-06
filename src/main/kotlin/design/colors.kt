@@ -27,6 +27,5 @@ fun Color.withLightness(lightness: Float): Color {
         hsbArray
     )
     val newRGB = java.awt.Color.HSBtoRGB(hsbArray[0], hsbArray[1], lightness)
-    println(lightness)
     return Color(java.awt.Color(newRGB).red, java.awt.Color(newRGB).green, java.awt.Color(newRGB).blue)
 }
