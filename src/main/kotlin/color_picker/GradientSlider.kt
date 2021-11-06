@@ -10,17 +10,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.SliderColors
-import androidx.compose.material.SliderDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.lerp
-import androidx.compose.ui.graphics.PointMode
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -28,22 +26,21 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.util.lerp
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.coroutineScope
+import design.darken
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 
 // Internal to be referred to in tests
-internal val ThumbRadius = 10.dp
+internal val ThumbRadius = 12.dp
 private val ThumbRippleRadius = 24.dp
 private val ThumbDefaultElevation = 1.dp
 private val ThumbPressedElevation = 6.dp
 
 // Internal to be referred to in tests
-internal val TrackHeight = 4.dp
+internal val TrackHeight = 8.dp
 private val SliderHeight = 48.dp
 private val SliderMinWidth = 144.dp // TODO: clarify min width
 private val DefaultSliderConstraints =
@@ -51,7 +48,7 @@ private val DefaultSliderConstraints =
         .heightIn(max = SliderHeight)
 
 @Composable
-fun Slider(
+fun GradientSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -61,21 +58,27 @@ fun Slider(
     steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    colors: SliderColors = SliderDefaults.colors()
+    currentColor: Color,
+    brush: Brush,
+    backgroundColor: Color = currentColor.darken(),
+    outlineColor: Color = Color.Gray
 ) {
     require(steps >= 0) { "steps should be >= 0" }
     val onValueChangeState = rememberUpdatedState(onValueChange)
     val tickFractions = remember(steps) {
         if (steps == 0) emptyList() else List(steps + 2) { it.toFloat() / (steps + 1) }
     }
+
     BoxWithConstraints(
         modifier
-            .requiredSizeIn(minWidth = ThumbRadius * 2, minHeight = ThumbRadius * 2)
+            .requiredSizeIn(minWidth = ThumbRadius * 4, minHeight = ThumbRadius * 4, maxHeight = ThumbRadius * 4)
             .sliderSemantics(value, tickFractions, enabled, onValueChange, valueRange, steps)
+            .clip(RoundedCornerShape(8.dp))
+            .background(backgroundColor)
     ) {
         val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-        val maxPx = constraints.maxWidth.toFloat()
-        val minPx = 0f
+        val minPx = with(LocalDensity.current) { ThumbRadius.toPx() * 2 }
+        val maxPx = constraints.maxWidth - minPx
 
         fun scaleToUserValue(offset: Float) =
             scale(minPx, maxPx, offset, valueRange.start, valueRange.endInclusive)
@@ -85,9 +88,11 @@ fun Slider(
 
         val scope = rememberCoroutineScope()
         val rawOffset = remember { mutableStateOf(scaleToOffset(value)) }
+        var imaginaryOffset by remember { mutableStateOf(scaleToOffset(value)) }
         val draggableState = remember(minPx, maxPx, valueRange) {
             SliderDraggableState {
-                rawOffset.value = (rawOffset.value + it).coerceIn(minPx, maxPx)
+                imaginaryOffset += it
+                rawOffset.value = imaginaryOffset.coerceIn(minPx, maxPx)
                 onValueChangeState.value.invoke(scaleToUserValue(rawOffset.value))
             }
         }
@@ -125,40 +130,64 @@ fun Slider(
             reverseDirection = isRtl,
             enabled = enabled,
             interactionSource = interactionSource,
-            onDragStopped = { velocity -> gestureEndAction.value.invoke(velocity) },
+            onDragStopped = { velocity ->
+                gestureEndAction.value.invoke(velocity); imaginaryOffset = imaginaryOffset.coerceIn(minPx, maxPx)
+            },
             startDragImmediately = draggableState.isDragging,
             state = draggableState
         )
+
+        val scrollableState = rememberScrollableState { delta ->
+
+            scope.launch {
+                /*draggableState.drag(MutatePriority.UserInput) {
+                    dragBy(2 * delta)
+                }*/
+                rawOffset.value += delta * 2
+                rawOffset.value = rawOffset.value.coerceIn(minPx, maxPx)
+                onValueChangeState.value.invoke(scaleToUserValue(rawOffset.value))
+            }
+
+            delta
+        }
+
         val coerced = value.coerceIn(valueRange.start, valueRange.endInclusive)
         val fraction = calcFraction(valueRange.start, valueRange.endInclusive, coerced)
-        SliderImpl(
-            enabled,
-            fraction,
-            tickFractions,
-            colors,
-            maxPx,
-            interactionSource,
-            modifier = press.then(drag)
-        )
+
+        Box(/*modifier = Modifier.scrollable(scrollableState, Orientation.Vertical)*/) {
+            GradientSliderImpl(
+                enabled,
+                fraction,
+                tickFractions,
+                currentColor,
+                maxPx,
+                interactionSource,
+                modifier = press.then(drag),
+                brush,
+                outlineColor
+            )
+        }
     }
 }
 
 @Composable
-private fun SliderImpl(
+private fun GradientSliderImpl(
     enabled: Boolean,
     positionFraction: Float,
     tickFractions: List<Float>,
-    colors: SliderColors,
+    currentColor: Color,
     width: Float,
     interactionSource: MutableInteractionSource,
-    modifier: Modifier
+    modifier: Modifier,
+    brush: Brush,
+    outlineColor: Color
 ) {
     val widthDp = with(LocalDensity.current) {
         width.toDp()
     }
     Box(modifier.then(DefaultSliderConstraints)) {
         val thumbSize = ThumbRadius * 2
-        val offset = (widthDp - thumbSize) * positionFraction
+        val offset = (widthDp - thumbSize) * positionFraction + ThumbRadius
         val center = Modifier.align(Alignment.CenterStart)
 
         val trackStrokeWidth: Float
@@ -167,14 +196,12 @@ private fun SliderImpl(
             trackStrokeWidth = TrackHeight.toPx()
             thumbPx = ThumbRadius.toPx()
         }
-        Track(
+        GradientTrack(
             center.fillMaxSize(),
-            colors,
-            enabled,
-            positionFraction,
-            tickFractions,
+            currentColor,
             thumbPx,
-            trackStrokeWidth
+            trackStrokeWidth,
+            brush
         )
         Box(center.padding(start = offset)) {
             val interactions = remember { mutableStateListOf<Interaction>() }
@@ -207,7 +234,8 @@ private fun SliderImpl(
                         indication = rememberRipple(bounded = false, radius = ThumbRippleRadius)
                     )
                     .shadow(if (enabled) elevation else 0.dp, CircleShape, clip = false)
-                    .background(colors.thumbColor(enabled).value, CircleShape)
+                    .background(currentColor, CircleShape)
+                    .border(1.dp, outlineColor, CircleShape)
             )
         }
     }
@@ -339,54 +367,28 @@ private fun Modifier.sliderPressModifier(
     }
 
 @Composable
-private fun Track(
+private fun GradientTrack(
     modifier: Modifier,
-    colors: SliderColors,
-    enabled: Boolean,
-    positionFraction: Float,
-    tickFractions: List<Float>,
+    currentColor: Color,
     thumbPx: Float,
-    trackStrokeWidth: Float
+    trackStrokeWidth: Float,
+    brush: Brush
 ) {
-    val inactiveTrackColor = colors.trackColor(enabled, active = false)
-    val activeTrackColor = colors.trackColor(enabled, active = true)
-    val inactiveTickColor = colors.tickColor(enabled, active = false)
-    val activeTickColor = colors.tickColor(enabled, active = true)
     Canvas(modifier) {
         val isRtl = layoutDirection == LayoutDirection.Rtl
-        val sliderLeft = Offset(thumbPx, center.y)
-        val sliderRight = Offset(size.width - thumbPx, center.y)
+        val sliderLeft = Offset(thumbPx * 2, center.y)
+        val sliderRight = Offset(size.width - thumbPx * 2, center.y)
         val sliderStart = if (isRtl) sliderRight else sliderLeft
         val sliderEnd = if (isRtl) sliderLeft else sliderRight
+
+
+
         drawLine(
-            inactiveTrackColor.value,
+            brush,
             sliderStart,
             sliderEnd,
             trackStrokeWidth,
-            StrokeCap.Round
+            StrokeCap.Round,
         )
-        val sliderValue = Offset(
-            sliderStart.x + (sliderEnd.x - sliderStart.x) * positionFraction,
-            center.y
-        )
-
-        drawLine(
-            activeTrackColor.value,
-            sliderStart,
-            sliderValue,
-            trackStrokeWidth,
-            StrokeCap.Round
-        )
-        tickFractions.groupBy { it > positionFraction }.forEach { (afterFraction, list) ->
-            drawPoints(
-                list.map {
-                    Offset(lerp(sliderStart, sliderEnd, it).x, center.y)
-                },
-                PointMode.Points,
-                (if (afterFraction) inactiveTickColor else activeTickColor).value,
-                trackStrokeWidth,
-                StrokeCap.Round
-            )
-        }
     }
 }

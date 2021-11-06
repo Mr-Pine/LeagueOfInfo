@@ -1,6 +1,8 @@
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
@@ -16,10 +18,12 @@ import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+import kotlin.math.absoluteValue
+import kotlin.math.max
 
 
 class Game {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.Default)
     var gameStarted by mutableStateOf(false)
 
     var activeTeam by mutableStateOf(Team.UNKNOWN)
@@ -29,7 +33,12 @@ class Game {
         val chaos = mutableStateListOf<Summoner>()
     }
 
+    var summonerSelected by mutableStateOf("unknown")
+
     val events = mutableStateListOf<ActionEvent>()
+
+    val killDifference = mutableStateListOf(0)
+    var maxKillDifference by mutableStateOf(0)
 
     fun getPlayers(team: Team): Array<Summoner> {
         return when (team) {
@@ -75,29 +84,31 @@ class Game {
         val client = HttpClient.newBuilder().sslContext(sc).build()
         val request =
             HttpRequest.newBuilder().uri(URI.create("https://127.0.0.1:2999/liveclientdata/allgamedata")).GET().build()
-        scope.launch {
-            var responseJson = JsonNull as JsonElement
-                while (true) {
-                        try {
-                            delay(1000)
-                            val responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                            val response = responseFuture.await()
-                            responseJson = Json.parseToJsonElement(response.body())
-                            if (responseJson.jsonObject["events"] != null) {
-                                gameStarted = true
-                                break
-                            }
+        scope.launch(Dispatchers.Main) {
+            var responseJson: JsonElement
+            while (true) {
+                println("hi")
+                try {
+                    delay(5000)
+                    val responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    val response = responseFuture.await()
+                    responseJson = Json.parseToJsonElement(response.body())
+                    if (responseJson.jsonObject["events"] != null) {
+                        gameStarted = true
+                        break
+                    }
 
-                            println(response.body())
-                        } catch (e: Exception) {
-                            println("Game not started yet")
-                        }
+                    println(response.body())
+                } catch (e: Exception) {
                 }
+            }
             val responseObject = responseJson.jsonObject
             val activePlayerName = responseObject["activePlayer"]!!.jsonObject["summonerName"]
+            if (activePlayerName != null) {
+                summonerSelected = activePlayerName.jsonPrimitive.content
+            }
             val activePlayer =
                 responseObject["allPlayers"]!!.jsonArray.last { it.jsonObject["summonerName"] == activePlayerName }
-            println(activePlayer.jsonObject["team"]!!.jsonPrimitive.content == "ORDER")
             activeTeam =
                 if (activePlayer.jsonObject["team"]!!.jsonPrimitive.content == "ORDER") Team.ORDER else Team.CHAOS
             responseObject["allPlayers"]!!.jsonArray.forEach {
@@ -106,6 +117,10 @@ class Game {
                 val championDisplayName = player["championName"]!!.jsonPrimitive.content
                 val championName = player["rawChampionName"]!!.jsonPrimitive.content.substring(27)
                 val team = player["team"]!!.jsonPrimitive.content
+                /*val team = "ORDER"
+                val summonerName = "Mr. Pine"
+                val championDisplayName = "Sivir"
+                val championName = "Sivir"*/
                 (if (team == "ORDER") players.order else players.chaos).add(
                     Summoner(
                         name = summonerName,
@@ -115,6 +130,7 @@ class Game {
                     )
                 )
             }
+            //players.order.sortBy {  } TODO: Sorting by position
             watchEvents(client)
         }
     }
@@ -124,13 +140,18 @@ class Game {
     private fun watchEvents(client: HttpClient) {
         val request =
             HttpRequest.newBuilder().uri(URI.create("https://127.0.0.1:2999/liveclientdata/eventdata")).GET().build()
-        scope.launch (Dispatchers.IO){
+        scope.launch(Dispatchers.IO) {
+            println("hello")
+            var prevTime = Date().time
+            var count = 0
             while (true) {
-                delay(1000)
-                println(Thread.currentThread().name)
+                delay(3000)
+                val newTime = Date().time
+                println(newTime - prevTime)
+                println(count++)
+                prevTime = newTime
                 val time = Date().time
-                val response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
-                println("${Thread.currentThread().name} after ${Date().time - time}")
+                val response = client.send(request, HttpResponse.BodyHandlers.ofString())
                 val eventList = Json.parseToJsonElement(response.body()).jsonObject["Events"]!!.jsonArray
                 eventList.forEach {
                     val event = it.jsonObject
@@ -206,6 +227,12 @@ class Game {
                             if (killer is SummonerEntity) {
                                 killer.summoner.kda.addKill(victim.summoner)
 
+                                val lastKD = killDifference[killDifference.lastIndex]
+                                val newKD = lastKD + if(killer.team == Team.ORDER) 1 else -1
+                                killDifference[killDifference.size] = newKD
+
+                                maxKillDifference = max(maxKillDifference, newKD.absoluteValue)
+
                                 victim.summoner.kda.addDeath(killer.summoner)
 
                                 assisters.forEach { assister ->
@@ -230,6 +257,7 @@ class Game {
                         lastEventIndex = eventIndex
                     }
                 }
+                println(Date().time - prevTime)
             }
         }
     }
@@ -289,9 +317,11 @@ open class Entity {
 
     open val team = Team.UNKNOWN
 
+    var icon: Any? by mutableStateOf(null)
+
     @Composable
-    open fun iconDraw(modifier: Modifier = Modifier) {
-        Image(painterResource("Icons/missing_square.png"), "icon", modifier = modifier)
+    open fun getIcon() {
+        icon = painterResource("Icons/missing_square.png")
     }
 }
 
@@ -299,14 +329,17 @@ class SummonerEntity(val summoner: Summoner) : Entity() {
     override val type = EntityType.SUMMONER
 
     override val team = summoner.team
+    val name = summoner.name
+
+    var championIcon: ImageBitmap? by mutableStateOf(null);
 
     @Composable
-    override fun iconDraw(modifier: Modifier) {
-        Image(
-            loadNetworkImage("http://ddragon.leagueoflegends.com/cdn/11.21.1/img/champion/${summoner.championName}.png"),
-            "icon",
-            modifier = modifier
-        )
+    override fun getIcon() {
+        CoroutineScope(Dispatchers.Main).launch {
+            championIcon =
+                loadNetworkImage("http://ddragon.leagueoflegends.com/cdn/11.21.1/img/champion/${summoner.championName}.png")
+            icon = championIcon
+        }
     }
 }
 
@@ -325,13 +358,13 @@ class MinionEntity(minionName: String) : Entity() {
         SUPER, NORMAL
     }
 
+    var unitIcon: Painter? = null
+
     @Composable
-    override fun iconDraw(modifier: Modifier) {
-        Image(
-            painterResource("Icons/${if (team == Team.ORDER) "blue" else "red"}${""/*if(minionType == MinionType.SUPER) "mech" else ""*/}melee_square.png"),
-            "icon",
-            modifier = modifier
-        )
+    override fun getIcon() {
+        unitIcon =
+            painterResource("Icons/${if (team == Team.ORDER) "blue" else "red"}${""/*if(minionType == MinionType.SUPER) "mech" else ""*/}melee_square.png")
+        icon = unitIcon
     }
 }
 
@@ -344,13 +377,12 @@ class TurretEntity(turretName: String) : Entity() {
         team = if (turretName.contains("T1")) Team.ORDER else Team.CHAOS
     }
 
+    var unitIcon: Painter? = null
+
     @Composable
-    override fun iconDraw(modifier: Modifier) {
-        Image(
-            painterResource("Icons/turret_${if (team == Team.ORDER) "blue" else "red"}_square.png"),
-            "icon",
-            modifier = modifier
-        )
+    override fun getIcon() {
+        unitIcon = painterResource("Icons/turret_${if (team == Team.ORDER) "blue" else "red"}_square.png")
+        icon = unitIcon
     }
 }
 
@@ -363,13 +395,12 @@ class InhibEntity(inhibName: String) : Entity() {
         team = if (inhibName.contains("T1")) Team.ORDER else Team.CHAOS
     }
 
+    var unitIcon: Painter? = null
+
     @Composable
-    override fun iconDraw(modifier: Modifier) {
-        Image(
-            painterResource("Icons/inhibitor_${if (team == Team.ORDER) "blue" else "red"}_square.png"),
-            "icon",
-            modifier = modifier
-        )
+    override fun getIcon() {
+        unitIcon = painterResource("Icons/inhibitor_${if (team == Team.ORDER) "blue" else "red"}_square.png")
+        icon = unitIcon
     }
 }
 
@@ -390,13 +421,12 @@ class MonsterEntity(monsterName: String) : Entity() {
         }
     }
 
+    var unitIcon: Painter? = null
+
     @Composable
-    override fun iconDraw(modifier: Modifier) {
-        Image(
-            painterResource("Icons/${monsterType}_square.png"),
-            "icon",
-            modifier = modifier
-        )
+    override fun getIcon() {
+        unitIcon = painterResource("Icons/${monsterType}_square.png")
+        icon = unitIcon
     }
 
     enum class MonsterType {

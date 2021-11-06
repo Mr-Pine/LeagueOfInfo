@@ -7,6 +7,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.gestures.forEachGesture
@@ -30,6 +31,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import design.darken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.jetbrains.skia.BlendMode
 import java.util.*
 import kotlin.math.asin
@@ -38,20 +43,90 @@ import kotlin.math.sign
 import kotlin.math.sin
 
 @Composable
-fun ColorPickerWidget(onColorChange: (Color) -> Unit) {
-    Column(modifier = Modifier.width(500.dp)) {
-        var sliderPosition by remember { mutableStateOf(0f) }
-        ColorPicker(Modifier, sliderPosition, onColorChange)
-        Text(text = sliderPosition.toString())
-        Slider(value = sliderPosition, onValueChange = { sliderPosition = it })
+fun ColorPickerWidget(
+    currentColor: Color,
+    onColorChange: (Color) -> Unit,
+    currentContrast: Float,
+    modifier: Modifier = Modifier,
+    setContrast: (Float) -> Unit
+) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        var lightnessSliderPosition by remember { mutableStateOf(0.5f) }
+
+
+        val currentHSB = FloatArray(3)
+        java.awt.Color.RGBtoHSB(
+            (currentColor.red * 255).toInt(),
+            (currentColor.green * 255).toInt(),
+            (currentColor.blue * 255).toInt(),
+            currentHSB
+        )
+        val fullLightness = java.awt.Color.HSBtoRGB(currentHSB[0], currentHSB[1], 1f)
+
+        val lightnessGradientBrush = Brush.linearGradient(listOf(Color.Black, Color(fullLightness)))
+
+        val outlineColor by remember(
+            currentColor,
+            currentContrast
+        ) {
+            val darkerColor = currentColor.darken(currentContrast)
+            val contrastHSB = FloatArray(3)
+            java.awt.Color.RGBtoHSB(
+                (darkerColor.red * 255).toInt(),
+                (darkerColor.green * 255).toInt(),
+                (darkerColor.blue * 255).toInt(),
+                contrastHSB
+            )
+            contrastHSB[2] -= 0.2f * (contrastHSB[2] - 0.4f).sign
+            contrastHSB[2] = contrastHSB[2].coerceIn(0f..1f)
+            mutableStateOf(
+                Color(java.awt.Color.HSBtoRGB(contrastHSB[0], contrastHSB[1], contrastHSB[2]))
+            ) }
+
+        ColorPicker(Modifier, lightnessSliderPosition, outlineColor, onColorChange)
+
+        GradientSlider(
+            value = lightnessSliderPosition,
+            valueRange = 0.1f..1f,
+            currentColor = currentColor,
+            brush = lightnessGradientBrush,
+            onValueChange = { lightness ->
+                CoroutineScope(Dispatchers.Default).launch {
+                    lightnessSliderPosition = lightness
+
+                    val adjustedLightness = java.awt.Color.HSBtoRGB(currentHSB[0], currentHSB[1], lightness)
+
+                    onColorChange(Color(adjustedLightness))
+                }
+            },
+            backgroundColor = currentColor.darken(currentContrast),
+            outlineColor = outlineColor
+        )
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        val contrastGradientBrush = Brush.linearGradient(listOf(currentColor.darken(0f), currentColor.darken(1f)))
+
+
+
+        GradientSlider(
+            value = currentContrast,
+            valueRange = 0f..1f,
+            currentColor = currentColor.darken(currentContrast),
+            brush = contrastGradientBrush,
+            onValueChange = setContrast,
+            backgroundColor = currentColor.darken(currentContrast),
+            outlineColor = outlineColor
+        )
     }
 }
 
 @Composable
-fun ColorPicker(sizeModifier: Modifier, lightness: Float, onColorChange: (Color) -> Unit) {
+fun ColorPicker(sizeModifier: Modifier, lightness: Float, outlineColor: Color = Color.Transparent, onColorChange: (Color) -> Unit) {
     require(lightness in 0f..1f)
     BoxWithConstraints(
-        sizeModifier.padding(50.dp)
+        sizeModifier.padding(top = 8.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
             .fillMaxWidth()
             .aspectRatio(1f)
     ) {
@@ -65,12 +140,13 @@ fun ColorPicker(sizeModifier: Modifier, lightness: Float, onColorChange: (Color)
                 var updatedPosition = newPosition
                 // Work out if the new position is inside the circle we are drawing, and has a
                 // valid color associated to it. If not, keep the current position
-                val centeredPosition = newPosition - Offset(diameter/2f, diameter/2f)
-                if(centeredPosition.getDistance() > diameter/2){
-                    val angle = asin(centeredPosition.x/centeredPosition.getDistance())
-                    updatedPosition = Offset(sin(angle) * (diameter/2 - 2), cos(angle) * (diameter/2 - 2) * centeredPosition.y.sign) + Offset(diameter/2f, diameter/2f)
-                    println(diameter)
-                    println(updatedPosition)
+                val centeredPosition = newPosition - Offset(diameter / 2f, diameter / 2f)
+                if (centeredPosition.getDistance() > diameter / 2) {
+                    val angle = asin(centeredPosition.x / centeredPosition.getDistance())
+                    updatedPosition = Offset(
+                        sin(angle) * (diameter / 2 - 2),
+                        cos(angle) * (diameter / 2 - 2) * centeredPosition.y.sign
+                    ) + Offset(diameter / 2f, diameter / 2f)
                 }
                 val newColor = colorWheel.colorForPosition(updatedPosition)
                 if (newColor.isSpecified) {
@@ -94,7 +170,8 @@ fun ColorPicker(sizeModifier: Modifier, lightness: Float, onColorChange: (Color)
         }
 
         Box(Modifier.fillMaxSize()) {
-            Image(modifier = inputModifier, contentDescription = null, bitmap = colorWheel.image)
+            Image(modifier = inputModifier
+                .border(2.dp, outlineColor, CircleShape), contentDescription = null, bitmap = colorWheel.image)
             val color = colorWheel.colorForPosition(position)
             if (color.isSpecified) {
                 Magnifier(visible = hasInput, position = position, color = color)
@@ -265,7 +342,7 @@ private class ColorWheel(diameter: Int, lightness: Float) {
     val image = ImageBitmap(diameter, diameter).also { imageBitmap ->
         val canvas = Canvas(imageBitmap)
         val center = Offset(radius, radius)
-        val paint = Paint().apply { shader = lightnessAdjustedShader}
+        val paint = Paint().apply { shader = lightnessAdjustedShader }
         canvas.drawCircle(center, radius, paint)
     }
 }
@@ -279,8 +356,8 @@ private fun ColorWheel.colorForPosition(position: Offset): Color {
     val y = position.y.toInt().coerceAtLeast(0)
     with(image.toPixelMap()) {
         if (x >= width || y >= height) return Color.Unspecified
-        val relX = position.x.coerceAtLeast(0f) - width/2
-        val relY = position.y.coerceAtLeast(0f) - width/2
+        val relX = position.x.coerceAtLeast(0f) - width / 2
+        val relY = position.y.coerceAtLeast(0f) - width / 2
         return this[x, y].takeIf { it.alpha == 1f } ?: Color.Unspecified
     }
 }
