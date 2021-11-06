@@ -12,6 +12,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.useResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Window
@@ -22,10 +24,15 @@ import design.darken
 import design.withLightness
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
 import org.jetbrains.skia.Image.Companion.makeFromEncoded
+import settings.SettingsSaver
 import java.awt.Desktop
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
@@ -42,6 +49,8 @@ fun App(game: Game, windowSize: DpSize) {
 
     val orderColor by remember(mainColor) { mutableStateOf(Color(0xFF0A96AA).withLightness(sqrt(sqrt(mainColor.luminance())))) }
     val chaosColor by remember(mainColor) { mutableStateOf(Color(0xFFBE1E37).withLightness(sqrt(sqrt(mainColor.luminance())))) }
+
+    val settingsSaver = remember { SettingsSaver(setColor = {mainColor = it}, setContrast = {contrast = it}) }
 
     val localDensity = LocalDensity.current
 
@@ -119,10 +128,18 @@ fun App(game: Game, windowSize: DpSize) {
                             mainColor,
                             onColorChange = { colorPicked ->
                                 mainColor = colorPicked
+                                settingsSaver.saveSettings { settings ->
+                                    settings.colors.mainColorInt = colorPicked.value
+                                    return@saveSettings settings
+                                }
                             },
                             setContrast = {
                                 CoroutineScope(Dispatchers.Default).launch {
                                     contrast = it
+                                    settingsSaver.saveSettings { settings ->
+                                        settings.colors.contrast = it
+                                        return@saveSettings settings
+                                    }
                                 }
                             },
                             currentContrast = contrast,
@@ -321,3 +338,4 @@ fun openWebpage(uri: URI): Boolean {
     }
     return false
 }
+

@@ -23,6 +23,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.5.2-native-mt")
     implementation("org.jetbrains.compose.ui:ui-util-desktop:1.0.0-beta5")
+    implementation("com.google.code.gson:gson:2.8.9")
 
 
 }
