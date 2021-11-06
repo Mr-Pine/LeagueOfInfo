@@ -50,7 +50,7 @@ fun App(game: Game, windowSize: DpSize) {
     val orderColor by remember(mainColor) { mutableStateOf(Color(0xFF0A96AA).withLightness(sqrt(sqrt(mainColor.luminance())))) }
     val chaosColor by remember(mainColor) { mutableStateOf(Color(0xFFBE1E37).withLightness(sqrt(sqrt(mainColor.luminance())))) }
 
-    val settingsSaver = remember { SettingsSaver(setColor = {mainColor = it}, setContrast = {contrast = it}) }
+    val settingsSaver = remember { SettingsSaver(setColor = { mainColor = it }, setContrast = { contrast = it }) }
 
     val localDensity = LocalDensity.current
 
@@ -165,12 +165,12 @@ fun App(game: Game, windowSize: DpSize) {
             }
             UIColumn(contrast) {
                 UICard(title = "Lane KDA", titleColor = mainColor.darken(contrast / 2)) {
-                    Column (Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                    Column(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween) {
                         val orderPlayers = game.getPlayers(Team.ORDER)
                         val chaosPlayers = game.getPlayers(Team.CHAOS)
-                        for(i in 0..orderPlayers.lastIndex) {
+                        for (i in 0..orderPlayers.lastIndex) {
                             val orderPlayer = orderPlayers[i]
-                            if(i > chaosPlayers.lastIndex) continue
+                            if (i > chaosPlayers.lastIndex) continue
                             val chaosPlayer = chaosPlayers[i]
                             val orderKDA = orderPlayer.kda.against[chaosPlayer.name] ?: KDAData()
                             val chaosKDA = chaosPlayer.kda.against[orderPlayer.name] ?: KDAData()
@@ -184,7 +184,7 @@ fun App(game: Game, windowSize: DpSize) {
                                         kda = orderKDA,
                                         backgroundColor = orderColor.darken(contrast / 3),
                                         summonerSelected = game.summonerSelected,
-                                        onSummonerSelect = {game.summonerSelected = it}
+                                        onSummonerSelect = { game.summonerSelected = it }
                                     )
                                 }
                                 Column(Modifier.fillMaxWidth().background(chaosColor).padding(8.dp).weight(1f)) {
@@ -193,10 +193,86 @@ fun App(game: Game, windowSize: DpSize) {
                                         kda = chaosKDA,
                                         backgroundColor = chaosColor.darken(contrast / 3),
                                         summonerSelected = game.summonerSelected,
-                                        onSummonerSelect = {game.summonerSelected = it}
+                                        onSummonerSelect = { game.summonerSelected = it }
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+                UICard(title = "One vs all KDA", titleColor = mainColor.darken(contrast / 2)) {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally) {
+                        val allSummoners = game.getPlayers(Team.UNKNOWN)
+                        if (allSummoners.any { it.name == game.summonerSelected }) {
+                            var selectedOne by remember { mutableStateOf(allSummoners.last { it.name == game.summonerSelected }) }
+                            var expanded by remember { mutableStateOf(false) }
+                            Row(horizontalArrangement = Arrangement.Center) {
+                                SummonerComposable(
+                                    summoner = selectedOne,
+                                    kda = selectedOne.kda.total,
+                                    backgroundColor = (if (selectedOne.team == Team.ORDER) orderColor else chaosColor).darken(
+                                        contrast / 3
+                                    ),
+                                    summonerSelected = game.summonerSelected,
+                                    modifier = Modifier.widthIn(max = 400.dp)
+                                ) {
+                                    expanded = true
+                                }
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false },
+                                    modifier = Modifier.width(400.dp).background(mainColor.darken(contrast/2)).clip(
+                                        RoundedCornerShape(8.dp))
+                                ) {
+                                    allSummoners.forEach { summoner ->
+                                        SummonerComposable(
+                                            summoner,
+                                            kda = summoner.kda.total,
+                                            backgroundColor = (if (summoner.team == Team.ORDER) orderColor else chaosColor).darken(
+                                                contrast / 3
+                                            ),
+                                            summonerSelected = game.summonerSelected,
+                                            modifier = Modifier.padding(horizontal = 8.dp)
+                                        ) {
+                                            selectedOne = summoner
+                                            expanded = false
+                                        }
+                                    }
+                                }
+                            }
+
+                            game.getPlayers(if (selectedOne.team == Team.ORDER) Team.CHAOS else Team.ORDER)
+                                .forEach { enemy ->
+                                    val selectedKDA = selectedOne.kda.against[enemy.name] ?: KDAData()
+                                    val enemyKDA = enemy.kda.against[selectedOne.name] ?: KDAData()
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                    ) {
+                                        Column(
+                                            Modifier.fillMaxWidth().padding(8.dp).weight(1f)
+                                        ) {
+                                            SummonerComposable(
+                                                summoner = selectedOne,
+                                                kda = selectedKDA,
+                                                backgroundColor = orderColor.darken(contrast / 3),
+                                                summonerSelected = game.summonerSelected,
+                                                onSummonerSelect = { game.summonerSelected = it }
+                                            )
+                                        }
+                                        Column(
+                                            Modifier.fillMaxWidth().padding(8.dp).weight(1f)
+                                        ) {
+                                            SummonerComposable(
+                                                summoner = enemy,
+                                                kda = enemyKDA,
+                                                backgroundColor = chaosColor.darken(contrast / 3),
+                                                summonerSelected = game.summonerSelected,
+                                                onSummonerSelect = { game.summonerSelected = it }
+                                            )
+                                        }
+                                    }
+                                }
                         }
                     }
                 }

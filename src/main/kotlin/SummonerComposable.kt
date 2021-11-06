@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -23,10 +24,11 @@ fun SummonerComposable(
     kda: KDAData,
     backgroundColor: Color,
     summonerSelected: String,
+    modifier: Modifier = Modifier,
     onSummonerSelect: (String) -> Unit
 ) {
     Row(
-        modifier = Modifier.padding(vertical = 4.dp).clickable { onSummonerSelect(summoner.name) }.clip(RoundedCornerShape(8.dp))
+        modifier = Modifier.padding(vertical = 4.dp).clickable { onSummonerSelect(summoner.name) }.then(modifier).clip(RoundedCornerShape(8.dp))
             .background(backgroundColor).then(
                 if (summoner.name == summonerSelected) Modifier.border(
                     width = 2.dp,
@@ -50,6 +52,6 @@ fun SummonerComposable(
             Text(summoner.championDisplayName)
         }
         Spacer(Modifier.width(8.dp))
-        Text("${kda.kills} / ${kda.deaths} / ${kda.assists}")
+        Text("${kda.kills} / ${kda.deaths} / ${kda.assists}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
     }
 }
