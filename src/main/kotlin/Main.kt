@@ -47,10 +47,39 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
     var contrast by remember { mutableStateOf(0.5f) }
     val darkColor by remember(mainColor, contrast) { mutableStateOf(mainColor.darken(contrast)) }
 
-    val orderColor by remember(mainColor) { mutableStateOf(Color(0xFF0A96AA).withLightness(sqrt(sqrt(mainColor.luminance())))) }
-    val chaosColor by remember(mainColor) { mutableStateOf(Color(0xFFBE1E37).withLightness(sqrt(sqrt(mainColor.luminance())))) }
+    var switchTeamColors by remember { mutableStateOf(true) }
 
-    val settingsSaver = remember { SettingsSaver(setColor = { mainColor = it }, setContrast = { contrast = it }) }
+    val baseOrderColor = Color(0xFF0A96AA)
+    val baseChaosColor = Color(0xFFBE1E37)
+
+    val orderColor by remember(
+        mainColor,
+        switchTeamColors,
+        game.activeTeam
+    ) {
+        mutableStateOf(
+            (if (switchTeamColors && game.activeTeam == Team.CHAOS) baseChaosColor else baseOrderColor).withLightness(
+                sqrt(sqrt(mainColor.luminance()))
+            )
+        )
+    }
+    val chaosColor by remember(
+        mainColor,
+        switchTeamColors,
+        game.activeTeam
+    ) {
+        mutableStateOf(
+            (if (switchTeamColors && game.activeTeam == Team.CHAOS) baseOrderColor else baseChaosColor).withLightness(
+                sqrt(sqrt(mainColor.luminance()))
+            )
+        )
+    }
+
+    val settingsSaver = remember {
+        SettingsSaver(setColor = { mainColor = it },
+            setContrast = { contrast = it },
+            setSwitchColors = { switchTeamColors = it })
+    }
 
     val localDensity = LocalDensity.current
 
@@ -165,16 +194,43 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                 modifier = Modifier.widthIn(max = 300.dp)
                             )
                             Spacer(Modifier.height(16.dp))
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(4.dp).clip(RoundedCornerShape(8.dp))
+                                        .background(mainColor.darken(contrast / 1.5f)).padding(12.dp)
+                                        .padding(start = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Invert team colors if you are in Team Chaos")
+                                    Switch(
+                                        switchTeamColors,
+                                        onCheckedChange = {
+                                            switchTeamColors = it
+                                            settingsSaver.saveSettings { settings ->
+                                                settings.switchTeamColors = it; return@saveSettings settings
+                                            }
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = mainColor,
+                                            checkedTrackColor = mainColor.darken(contrast / 4),
+                                            uncheckedThumbColor = mainColor.darken(contrast),
+                                            uncheckedTrackColor = mainColor.darken(2 * contrast)
+                                        )
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(16.dp))
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 Button(
                                     onClick = { openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=bug&template=bug_report.md&title=")) },
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2))
                                 ) {
                                     Text("Report Bug")
                                 }
                                 Button(
                                     onClick = { openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=enhancement&template=feature_request.md&title=")) },
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast))
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2))
                                 ) {
                                     Text("Suggest Feature")
                                 }
@@ -183,7 +239,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                     }
                 }
                 UIColumn(contrast) {
-                    UICard(title = "Lane KDA", titleColor = mainColor.darken(contrast / 2)) {
+                    UICard(title = "Lane KDA", titleColor = mainColor.darken(contrast / 1.5f)) {
                         Column(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween) {
                             val orderPlayers = game.getPlayers(Team.ORDER)
                             val chaosPlayers = game.getPlayers(Team.CHAOS)
@@ -219,7 +275,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                             }
                         }
                     }
-                    UICard(title = "One vs all KDA", titleColor = mainColor.darken(contrast / 2)) {
+                    UICard(title = "One vs all KDA", titleColor = mainColor.darken(contrast / 1.5f)) {
                         Column(
                             Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             verticalArrangement = Arrangement.SpaceBetween,
@@ -229,7 +285,10 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                             if (allSummoners.any { it.name == game.summonerSelected }) {
                                 var selectedOne by remember { mutableStateOf(allSummoners.last { it.name == game.summonerSelected }) }
                                 var expanded by remember { mutableStateOf(false) }
-                                Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     SummonerComposable(
                                         summoner = selectedOne,
                                         kda = selectedOne.kda.total,
@@ -250,7 +309,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                             )
                                     ) {
                                         allSummoners.forEach { summoner ->
-                                            Row (Modifier.widthIn(min = 300.dp, max = 800.dp)) {
+                                            Row(Modifier.widthIn(min = 300.dp, max = 800.dp)) {
                                                 DropdownSummoner(
                                                     summoner,
                                                     kda = summoner.kda.total,
@@ -274,7 +333,8 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                         val enemyKDA = enemy.kda.against[selectedOne.name] ?: KDAData()
                                         Row(
                                             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
-                                                .clip(RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically
+                                                .clip(RoundedCornerShape(8.dp)),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Column(
                                                 Modifier.fillMaxWidth().padding(8.dp).weight(1f)
@@ -306,7 +366,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                 }
                 UIColumn(contrast, 0.6f) {
                     UICard(title = "Events", titleColor = mainColor.darken(contrast / 2)) {
-                        Column() {
+                        Column {
                             game.events.forEach { event ->
                                 EventComposable(event, chaosColor, orderColor, game.summonerSelected)
                             }

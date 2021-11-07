@@ -1,5 +1,6 @@
 package settings
 
+import androidx.compose.material.SwitchColors
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.useResource
 import com.google.gson.Gson
@@ -15,7 +16,10 @@ import java.io.File
 
 data class Settings(
     @SerializedName("colors")
-    val colors: ColorSettings
+    val colors: ColorSettings,
+
+    @SerializedName("switchColors")
+    var switchTeamColors: Boolean
 )
 
 data class ColorSettings(
@@ -26,7 +30,7 @@ data class ColorSettings(
     var contrast: Float
 )
 
-class SettingsSaver(setColor: (Color) -> Unit, setContrast: (Float) -> Unit) {
+class SettingsSaver(setColor: (Color) -> Unit, setContrast: (Float) -> Unit, setSwitchColors: (Boolean) -> Unit) {
     var counter = 3
     var counting = false
 
@@ -40,7 +44,7 @@ class SettingsSaver(setColor: (Color) -> Unit, setContrast: (Float) -> Unit) {
         if (!settingsFile.exists()){
             File("${System.getenv("APPDATA")}/LeagueOfInfo").mkdirs()
             settingsFile.createNewFile()
-            settings = Settings(ColorSettings(0u, 0f))
+            settings = Settings(ColorSettings(0u, 0f), true)
             useResource("defaultSettings.json") {
                 val defaultSettings = it.bufferedReader().readText()
                 settingsFile.writeText(defaultSettings)
@@ -52,6 +56,7 @@ class SettingsSaver(setColor: (Color) -> Unit, setContrast: (Float) -> Unit) {
             settings = gson.fromJson(settingsFile.readText(), Settings::class.java)
             setColor(Color(settings.colors.mainColorInt))
             setContrast(settings.colors.contrast)
+            setSwitchColors(settings.switchTeamColors)
         }
 
     }
