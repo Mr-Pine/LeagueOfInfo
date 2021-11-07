@@ -88,3 +88,53 @@ fun SummonerComposable(
         }
     }
 }
+
+@Composable fun DropdownSummoner(summoner: Summoner,
+    kda: KDAData,
+    backgroundColor: Color,
+    summonerSelected: String,
+    modifier: Modifier = Modifier,
+    onSummonerSelect: (String) -> Unit
+) {
+    Box(Modifier.padding(vertical = 4.dp).then(modifier).fillMaxWidth()
+        .clip(RoundedCornerShape(8.dp))
+        .clickable { onSummonerSelect(summoner.name) }
+        .background(backgroundColor).then(
+            if (summoner.name == summonerSelected) Modifier.border(
+                width = 2.dp,
+                color = Color.Yellow,
+                RoundedCornerShape(8.dp)
+            ) else Modifier
+        ).padding(8.dp), contentAlignment = Alignment.Center) {
+
+        var kdaSize by remember { mutableStateOf(IntSize(0, 0)) }
+        Row(
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
+        ) {
+            val championIcon = summoner.entity.championIcon
+            if (championIcon != null) {
+                Image(
+                    championIcon, "image",
+                    modifier = Modifier.height(50.dp)
+                )
+            } else {
+                summoner.entity.getIcon()
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.padding(end = with(LocalDensity.current) { kdaSize.width.toDp() })
+            ) {
+                Text(summoner.name)
+                Text(summoner.championDisplayName)
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Text(
+                "${kda.kills} / ${kda.deaths} / ${kda.assists}",
+                modifier = Modifier.onGloballyPositioned { kdaSize = it.size },
+                textAlign = TextAlign.End
+            )
+        }
+    }
+}

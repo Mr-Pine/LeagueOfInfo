@@ -1,3 +1,11 @@
-/build/
 /.gradle/
 /.idea/
+/build/wixToolset/
+/build/tmp/
+/build/resources/
+/build/libs/
+/build/kotlin/
+/build/classes/
+/build/compose/default-icons/
+/build/compose/tmp/
+/build/compose/logs/

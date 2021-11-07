@@ -250,17 +250,19 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                             )
                                     ) {
                                         allSummoners.forEach { summoner ->
-                                            SummonerComposable(
-                                                summoner,
-                                                kda = summoner.kda.total,
-                                                backgroundColor = (if (summoner.team == Team.ORDER) orderColor else chaosColor).darken(
-                                                    contrast / 3
-                                                ),
-                                                summonerSelected = game.summonerSelected,
-                                                modifier = Modifier.padding(horizontal = 8.dp)
-                                            ) {
-                                                selectedOne = summoner
-                                                expanded = false
+                                            Row (Modifier.widthIn(min = 300.dp, max = 800.dp)) {
+                                                DropdownSummoner(
+                                                    summoner,
+                                                    kda = summoner.kda.total,
+                                                    backgroundColor = (if (summoner.team == Team.ORDER) orderColor else chaosColor).darken(
+                                                        contrast / 3
+                                                    ),
+                                                    summonerSelected = game.summonerSelected,
+                                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                                ) {
+                                                    selectedOne = summoner
+                                                    expanded = false
+                                                }
                                             }
                                         }
                                     }
@@ -305,9 +307,9 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                 UIColumn(contrast, 0.6f) {
                     UICard(title = "Events", titleColor = mainColor.darken(contrast / 2)) {
                         Column() {
-                            /*game.events.forEach { event ->
+                            game.events.forEach { event ->
                                 EventComposable(event, chaosColor, orderColor, game.summonerSelected)
-                            }*/
+                            }
                         }
                     }
                     UICard(
@@ -359,6 +361,7 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         state = windowState,
         title = "LeagueOfInfo",
+        icon = painterResource("logo.svg")
     ) {
         var gameNumber by remember { mutableStateOf(0) }
         val game by remember(gameNumber) { mutableStateOf(Game()) }

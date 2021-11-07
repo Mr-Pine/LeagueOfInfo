@@ -36,9 +36,15 @@ compose.desktop {
     application {
         mainClass = "MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "LeagueOfInfo"
-            packageVersion = "1.0.0"
+            packageVersion = "0.9.0"
+            windows{
+                iconFile.set(project.file("./src/main/resources/icon.ico"))
+                menuGroup = "start-menu-group"
+            }
+            modules("java.instrument", "java.net.http", "java.sql", "jdk.unsupported")
         }
     }
 }
+
