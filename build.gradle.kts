@@ -38,10 +38,12 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "LeagueOfInfo"
-            packageVersion = "0.9.0"
+            packageVersion = "0.9.1"
+            description = "An application to see more info about your League of Legends game"
+            vendor = "Mr. Pine"
             windows{
                 iconFile.set(project.file("./src/main/resources/icon.ico"))
-                menuGroup = "start-menu-group"
+                menuGroup = "LeagueOfInfo"
             }
             modules("java.instrument", "java.net.http", "java.sql", "jdk.unsupported")
         }
