@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import design.darken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -192,32 +193,34 @@ private fun Magnifier(visible: Boolean, position: Offset, color: Color) {
             position.y.toDp() - (MagnifierHeight - (SelectionCircleDiameter / 2))
         )
     }
-    MagnifierTransition(
-        visible,
-        MagnifierWidth,
-        SelectionCircleDiameter
-    ) { labelWidth: Dp, selectionDiameter: Dp,
-        alpha: Float ->
-        Column(
-            offset.size(width = MagnifierWidth, height = MagnifierHeight)
-                .alpha(alpha)
-        ) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                MagnifierLabel(Modifier.size(labelWidth, MagnifierLabelHeight), color)
-            }
-            Spacer(Modifier.weight(1f))
-            Box(
-                Modifier.fillMaxWidth().height(SelectionCircleDiameter),
-                contentAlignment = Alignment.Center
+    Popup {
+        MagnifierTransition(
+            visible,
+            MagnifierWidth,
+            SelectionCircleDiameter
+        ) { labelWidth: Dp, selectionDiameter: Dp,
+            alpha: Float ->
+            Column(
+                offset.size(width = MagnifierWidth, height = MagnifierHeight)
+                    .alpha(alpha)
             ) {
-                MagnifierSelectionCircle(Modifier.size(selectionDiameter), color)
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    MagnifierLabel(Modifier.size(labelWidth, MagnifierLabelHeight), color)
+                }
+                Spacer(Modifier.weight(1f))
+                Box(
+                    Modifier.fillMaxWidth().height(SelectionCircleDiameter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    MagnifierSelectionCircle(Modifier.size(selectionDiameter), color)
+                }
             }
         }
     }
 }
 
 private val MagnifierWidth = 110.dp
-private val MagnifierHeight = 100.dp
+private val MagnifierHeight = 90.dp
 private val MagnifierLabelHeight = 50.dp
 private val SelectionCircleDiameter = 30.dp
 
