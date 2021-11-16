@@ -21,6 +21,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import color_picker.ColorPickerWidget
 import design.darken
+import design.getLegibleTextColor
 import design.withLightness
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -121,7 +122,8 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                     "Team ORDER",
                                     modifier = Modifier.fillMaxWidth().background(orderColor.darken(contrast / 2))
                                         .padding(4.dp),
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    color = orderColor.darken(contrast / 2).getLegibleTextColor()
                                 )
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -146,7 +148,8 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                     "Team CHAOS",
                                     modifier = Modifier.fillMaxWidth().background(chaosColor.darken(contrast / 2))
                                         .padding(4.dp),
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    color = chaosColor.darken(contrast / 2).getLegibleTextColor()
                                 )
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -169,7 +172,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                     UICard(
                         modifier = Modifier.fillMaxWidth(),
                         title = "Settings",
-                        titleColor = mainColor.darken(contrast / 2)
+                        titleColor = mainColor.darken(contrast / 1.5f)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                             ColorPickerWidget(
@@ -202,7 +205,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Invert team colors if you are in Team Chaos")
+                                    Text("Invert team colors if you are in Team Chaos",color = mainColor.darken(contrast / 1.5f).getLegibleTextColor())
                                     Switch(
                                         switchTeamColors,
                                         onCheckedChange = {
@@ -224,13 +227,13 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 Button(
                                     onClick = { openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=bug&template=bug_report.md&title=")) },
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2))
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2), contentColor = mainColor.darken(contrast / 2).getLegibleTextColor())
                                 ) {
                                     Text("Report Bug")
                                 }
                                 Button(
                                     onClick = { openWebpage(URI.create("https://github.com/Mr-Pine/LeagueOfInfo/issues/new?assignees=Mr-Pine&labels=enhancement&template=feature_request.md&title=")) },
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2))
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2), contentColor = mainColor.darken(contrast / 2).getLegibleTextColor())
                                 ) {
                                     Text("Suggest Feature")
                                 }
@@ -365,7 +368,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                     }
                 }
                 UIColumn(contrast, 0.6f) {
-                    UICard(title = "Events", titleColor = mainColor.darken(contrast / 2)) {
+                    UICard(title = "Events", titleColor = mainColor.darken(contrast / 1.5f)) {
                         Column {
                             game.events.forEach { event ->
                                 EventComposable(event, chaosColor, orderColor, game.summonerSelected)
@@ -374,7 +377,7 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                     }
                     UICard(
                         modifier = Modifier.height(500.dp),
-                        titleColor = mainColor.darken(contrast / 2),
+                        titleColor = mainColor.darken(contrast / 1.5f),
                         title = "Kill difference",
                         noPadding = true
                     ) {
@@ -401,11 +404,12 @@ fun App(game: Game, windowSize: DpSize, nextGame: () -> Unit) {
                                             -(killHeight * game.killDifference[i]).toFloat()
                                         ) + centerOffset + with(localDensity) {
                                             Offset(
-                                                -3.dp.toPx(),
-                                                -3.dp.toPx()
+                                                -4.dp.toPx(),
+                                                -4.dp.toPx()
                                             )
                                         }).round()
-                                    }) {}
+                                    }
+                                ) {}
                             }
                         }
                     }
@@ -464,7 +468,8 @@ fun UICard(
                 title,
                 modifier = Modifier.fillMaxWidth().background(titleColor)
                     .padding(4.dp),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = titleColor.getLegibleTextColor()
             )
             Box(modifier = if (noPadding) Modifier else Modifier.padding(8.dp)) {
                 content()
