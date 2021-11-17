@@ -1,20 +1,27 @@
 package info_elements
 
 import AppInfo
+import DropdownSummoner
+import EventComposable
 import Game
+import KDAData
 import SummonerComposable
 import UICard
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import color_picker.ColorPickerWidget
 import design.darken
 import design.getLegibleTextColor
@@ -180,6 +187,232 @@ val settings = InfoElement("Settings") @Composable { appInfo, isSeparated, singl
                 ) {
                     Text("Suggest Feature")
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+val laneKDA = InfoElement("Lane KDA") @Composable { appInfo, isSeparated, singleContent ->
+    UICard(
+        title = "Lane KDA", titleColor = mainColor.darken(appInfo.contrast / 1.5f),
+        openPopup = {
+            appInfo.openWindow("Lane KDA") {
+                if (singleContent != null) {
+                    singleContent()
+                }
+            }
+        },
+        separable = (singleContent != null),
+        noOutsidePadding = isSeparated) {
+        Column(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            val orderPlayers = appInfo.game.getPlayers(Team.ORDER)
+            val chaosPlayers = appInfo.game.getPlayers(Team.CHAOS)
+            for (i in 0..orderPlayers.lastIndex) {
+                val orderPlayer = orderPlayers[i]
+                if (i > chaosPlayers.lastIndex) continue
+                val chaosPlayer = chaosPlayers[i]
+                val orderKDA = orderPlayer.kda.against[chaosPlayer.name] ?: KDAData()
+                val chaosKDA = chaosPlayer.kda.against[orderPlayer.name] ?: KDAData()
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                ) {
+                    Column(Modifier.fillMaxWidth().background(appInfo.orderColor).padding(8.dp).weight(1f)) {
+                        SummonerComposable(
+                            summoner = orderPlayer,
+                            kda = orderKDA,
+                            backgroundColor = appInfo.orderColor.darken(appInfo.contrast / 3),
+                            summonerSelected = appInfo.game.summonerSelected,
+                            onSummonerSelect = { appInfo.game.summonerSelected = it }
+                        )
+                    }
+                    Column(Modifier.fillMaxWidth().background(appInfo.chaosColor).padding(8.dp).weight(1f)) {
+                        SummonerComposable(
+                            summoner = chaosPlayer,
+                            kda = chaosKDA,
+                            backgroundColor = appInfo.chaosColor.darken(appInfo.contrast / 3),
+                            summonerSelected = appInfo.game.summonerSelected,
+                            onSummonerSelect = { appInfo.game.summonerSelected = it }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+val oneVsAllKDA = InfoElement("One vs all KDA") @Composable { appInfo, isSeparated, singleContent ->
+    UICard(
+        title = "One vs all KDA", titleColor = mainColor.darken(appInfo.contrast / 1.5f),
+        openPopup = {
+            appInfo.openWindow("One vs all KDA") @Composable {
+                if (singleContent != null) {
+                    singleContent()
+                }
+            }
+        },
+        separable = (singleContent != null),
+        noOutsidePadding = isSeparated
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val allSummoners = appInfo.game.getPlayers(Team.UNKNOWN)
+            if (allSummoners.any { it.name == appInfo.game.summonerSelected }) {
+                var selectedOne by remember { mutableStateOf(allSummoners.last { it.name == appInfo.game.summonerSelected }) }
+                var expanded by remember { mutableStateOf(false) }
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SummonerComposable(
+                        summoner = selectedOne,
+                        kda = selectedOne.kda.total,
+                        backgroundColor = (if (selectedOne.team == Team.ORDER) appInfo.orderColor else appInfo.chaosColor).darken(
+                            appInfo.contrast / 3
+                        ),
+                        summonerSelected = appInfo.game.summonerSelected,
+                        modifier = Modifier.widthIn(max = 800.dp, min = 300.dp).fillMaxWidth(0.5f)
+                    ) {
+                        expanded = true
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.width(400.dp).background(mainColor.darken(appInfo.contrast / 2))
+                            .clip(
+                                RoundedCornerShape(8.dp)
+                            )
+                    ) {
+                        allSummoners.forEach { summoner ->
+                            Row(Modifier.widthIn(min = 300.dp, max = 800.dp)) {
+                                DropdownSummoner(
+                                    summoner,
+                                    kda = summoner.kda.total,
+                                    backgroundColor = (if (summoner.team == Team.ORDER) appInfo.orderColor else appInfo.chaosColor).darken(
+                                        appInfo.contrast / 3
+                                    ),
+                                    summonerSelected = appInfo.game.summonerSelected,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                ) {
+                                    selectedOne = summoner
+                                    expanded = false
+                                }
+                            }
+                        }
+                    }
+                }
+
+                appInfo.game.getPlayers(if (selectedOne.team == Team.ORDER) Team.CHAOS else Team.ORDER)
+                    .forEach { enemy ->
+                        val selectedKDA = selectedOne.kda.against[enemy.name] ?: KDAData()
+                        val enemyKDA = enemy.kda.against[selectedOne.name] ?: KDAData()
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(8.dp).weight(1f)
+                            ) {
+                                SummonerComposable(
+                                    summoner = selectedOne,
+                                    kda = selectedKDA,
+                                    backgroundColor = appInfo.orderColor.darken(appInfo.contrast / 3),
+                                    summonerSelected = appInfo.game.summonerSelected,
+                                    onSummonerSelect = { appInfo.game.summonerSelected = it }
+                                )
+                            }
+                            Column(
+                                Modifier.fillMaxWidth().padding(8.dp).weight(1f)
+                            ) {
+                                SummonerComposable(
+                                    summoner = enemy,
+                                    kda = enemyKDA,
+                                    backgroundColor = appInfo.chaosColor.darken(appInfo.contrast / 3),
+                                    summonerSelected = appInfo.game.summonerSelected,
+                                    onSummonerSelect = { appInfo.game.summonerSelected = it }
+                                )
+                            }
+                        }
+                    }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+val events = InfoElement("Events") @Composable { appInfo, isSeparated, singleContent ->
+    UICard(
+        title = "Events",
+        titleColor = mainColor.darken(appInfo.contrast / 1.5f),
+        openPopup = {
+            appInfo.openWindow("Events") @Composable {
+                if (singleContent != null) {
+                    singleContent()
+                }
+            }
+        },
+        separable = (singleContent != null),
+        noOutsidePadding = isSeparated) {
+        Column {
+            appInfo.game.events.forEach { event ->
+                EventComposable(event, appInfo.chaosColor, appInfo.orderColor, appInfo.game.summonerSelected)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+val killDifferenceGraph = InfoElement("Kill Difference") { appInfo, isSeparated, singleContent ->
+    UICard(
+        modifier = Modifier.height(500.dp),
+        titleColor = mainColor.darken(appInfo.contrast / 1.5f),
+        title = "Kill difference",
+        noPadding = true,
+        openPopup = {
+            appInfo.openWindow("Kill Difference") @Composable {
+                if (singleContent != null) {
+                    singleContent()
+                }
+            }
+        },
+        separable = (singleContent != null),
+        noOutsidePadding = isSeparated
+    ) {
+        Column(Modifier.background(appInfo.orderColor)) {
+            Box(modifier = Modifier.fillMaxWidth().background(appInfo.orderColor).weight(1f))
+            Box(modifier = Modifier.fillMaxWidth().background(appInfo.chaosColor).weight(1f))
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val canvasHeight = constraints.maxHeight
+            val canvasWidth = constraints.maxWidth
+            val centerOffset = Offset(0f, canvasHeight / 2f)
+
+            val killWidth = canvasWidth / appInfo.game.killDifference.size
+            val killHeight = (canvasHeight - 50) / 2 / appInfo.game.maxKillDifference
+
+            for (i in 0 until appInfo.game.killDifference.size) {
+                Surface(
+                    shape = CircleShape,
+                    color = mainColor,
+                    border = BorderStroke(2.dp, mainColor.darken(appInfo.contrast)),
+                    modifier = Modifier.size(12.dp).offset {
+                        (Offset(
+                            (killWidth * i).toFloat(),
+                            -(killHeight * appInfo.game.killDifference[i]).toFloat()
+                        ) + centerOffset + with(appInfo.localDensity) {
+                            Offset(
+                                -4.dp.toPx(),
+                                -4.dp.toPx()
+                            )
+                        }).round()
+                    }
+                ) {}
             }
         }
     }
