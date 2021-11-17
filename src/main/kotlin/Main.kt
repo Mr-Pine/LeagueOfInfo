@@ -129,7 +129,7 @@ fun App(
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 UIColumn(contrast) {
-                    playerList.content(appInfo, false, null)
+                    playerList.content(appInfo, false) { playerList.content(appInfo, true, null)}
                     settings.content(appInfo, false) { settings.content(appInfo, true, null) }
                 }
                 UIColumn(contrast) {

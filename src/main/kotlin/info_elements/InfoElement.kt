@@ -19,7 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import color_picker.ColorPickerWidget
@@ -30,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mainColor
 import openWebpage
+import java.awt.Point
 import java.net.URI
 
 data class InfoElement(
@@ -37,11 +43,57 @@ data class InfoElement(
     val content: @Composable (appInfo: AppInfo, isSeparated: Boolean, singleContent: (@Composable () -> Unit)?) -> Unit,
 )
 
-val playerList = InfoElement("Player List") @Composable { appInfo, _, _ ->
+val playerList = InfoElement("Player List") @Composable { appInfo, isSeparated, singleContent ->
+    var showPopup by remember { mutableStateOf(false) }
+    var cardLayout by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var latestMousePosition by remember { mutableStateOf(Point()) }
+    val mouseOffset by remember(cardLayout, latestMousePosition) {
+        mutableStateOf(
+            cardLayout?.windowToLocal(
+                Offset(
+                    latestMousePosition.x + 20f, latestMousePosition.y + 10f
+                )
+            ) ?: Offset(0f, 0f)
+        )
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, end = 12.dp, start = 4.dp),
+        modifier = Modifier.then(if (!isSeparated) Modifier.onGloballyPositioned { layoutCoordinates ->
+            cardLayout = layoutCoordinates
+        } else Modifier).fillMaxWidth()
+            .then(if (!isSeparated) Modifier.padding(bottom = 8.dp, end = 12.dp, start = 4.dp) else Modifier)
+            .then(if (!isSeparated) Modifier.pointerInput(Unit) {
+                while (true) {
+                    val lastMouseEvent = awaitPointerEventScope { awaitPointerEvent() }.mouseEvent
+                    if (lastMouseEvent != null && lastMouseEvent.isPopupTrigger) {
+                        showPopup = true
+                        latestMousePosition = lastMouseEvent.point
+                    }
+                }
+            } else Modifier),
         elevation = 4.dp, backgroundColor = mainColor
     ) {
+        DropdownMenu(
+            expanded = showPopup,
+            onDismissRequest = { showPopup = false },
+            offset = with(LocalDensity.current) {
+                DpOffset(
+                    mouseOffset.x.toDp(),
+                    -(cardLayout?.size?.height ?: 0).toDp() + mouseOffset.y.toDp()
+                )
+            }) {
+            DropdownMenuItem(onClick = {
+                println("show single")
+                appInfo.openWindow("Players") @Composable {
+                    if (singleContent != null) {
+                        singleContent()
+                    }
+                }
+                showPopup = false
+            }) {
+                Text("show separated")
+            }
+        }
         Row() {
             Column(
                 modifier = Modifier.fillMaxWidth().weight(1f).background(appInfo.orderColor)
@@ -204,7 +256,8 @@ val laneKDA = InfoElement("Lane KDA") @Composable { appInfo, isSeparated, single
             }
         },
         separable = (singleContent != null),
-        noOutsidePadding = isSeparated) {
+        noOutsidePadding = isSeparated
+    ) {
         Column(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.SpaceBetween) {
             val orderPlayers = appInfo.game.getPlayers(Team.ORDER)
             val chaosPlayers = appInfo.game.getPlayers(Team.CHAOS)
@@ -358,7 +411,8 @@ val events = InfoElement("Events") @Composable { appInfo, isSeparated, singleCon
             }
         },
         separable = (singleContent != null),
-        noOutsidePadding = isSeparated) {
+        noOutsidePadding = isSeparated
+    ) {
         Column {
             appInfo.game.events.forEach { event ->
                 EventComposable(event, appInfo.chaosColor, appInfo.orderColor, appInfo.game.summonerSelected)
