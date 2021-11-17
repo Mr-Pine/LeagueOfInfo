@@ -68,7 +68,6 @@ fun minAlpha(color1: Color, color2: Color, r: Float): Float?{
 
     var n = 0f
     var c = 1f
-    println("hi")
     while(m >= s && c - n > d){
         val h = (n + c) / 2f
         val p = blendForegroundContrast(color1, color2, h)

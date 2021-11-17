@@ -89,7 +89,6 @@ class Game {
         scope.launch(Dispatchers.Main) {
             var responseJson: JsonElement
             while (true) {
-                println("hi")
                 try {
                     delay(5000)
                     val responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
