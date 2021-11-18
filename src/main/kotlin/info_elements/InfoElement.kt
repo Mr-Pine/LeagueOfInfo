@@ -375,7 +375,7 @@ val oneVsAllKDA = InfoElement("One vs all KDA") @Composable { appInfo, isSeparat
                                 SummonerComposable(
                                     summoner = selectedOne,
                                     kda = selectedKDA,
-                                    backgroundColor = appInfo.orderColor.darken(appInfo.contrast / 3),
+                                    backgroundColor = (if (selectedOne.team == Team.ORDER) appInfo.orderColor else appInfo.chaosColor).darken(appInfo.contrast / 3),
                                     summonerSelected = appInfo.game.summonerSelected,
                                     onSummonerSelect = { appInfo.game.summonerSelected = it }
                                 )
@@ -386,7 +386,7 @@ val oneVsAllKDA = InfoElement("One vs all KDA") @Composable { appInfo, isSeparat
                                 SummonerComposable(
                                     summoner = enemy,
                                     kda = enemyKDA,
-                                    backgroundColor = appInfo.chaosColor.darken(appInfo.contrast / 3),
+                                    backgroundColor = (if (selectedOne.team == Team.ORDER) appInfo.chaosColor else appInfo.orderColor).darken(appInfo.contrast / 3),
                                     summonerSelected = appInfo.game.summonerSelected,
                                     onSummonerSelect = { appInfo.game.summonerSelected = it }
                                 )
