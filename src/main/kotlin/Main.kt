@@ -117,7 +117,7 @@ fun App(
                         Button(
                             onClick = nextGame,
                             modifier = Modifier.padding(16.dp),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2))
+                            colors = ButtonDefaults.buttonColors(backgroundColor = mainColor.darken(contrast / 2), contentColor = mainColor.darken(contrast/2).getLegibleTextColor())
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Game finished")
