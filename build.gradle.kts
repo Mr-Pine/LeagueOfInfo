@@ -38,7 +38,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "LeagueOfInfo"
-            packageVersion = "1.0.0-RC1"
+            packageVersion = "0.9.2"
             description = "An application to see more info about your League of Legends game"
             vendor = "Mr. Pine"
             windows{

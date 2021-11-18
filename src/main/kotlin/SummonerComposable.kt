@@ -66,7 +66,6 @@ fun SummonerComposable(
                 val textStyleBody1 = MaterialTheme.typography.body1
                 var textStyle by remember (boxConstraints.maxWidth) { mutableStateOf(textStyleBody1) }
                 var readyToDraw by remember (boxConstraints.maxWidth) { mutableStateOf(false) }
-                println(boxConstraints)
                 Text(summoner.name, modifier = Modifier.drawWithContent {
                     if (readyToDraw) drawContent()
                 }, onTextLayout = { textLayoutResult ->
@@ -112,14 +111,10 @@ fun SummonerComposable(
             modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
         ) {
             val championIcon = summoner.entity.championIcon
-            if (championIcon != null) {
-                Image(
-                    championIcon, "image",
-                    modifier = Modifier.height(50.dp)
-                )
-            } else {
-                summoner.entity.getIcon()
-            }
+            Image(
+                championIcon, "image",
+                modifier = Modifier.height(50.dp)
+            )
             Spacer(Modifier.width(8.dp))
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,

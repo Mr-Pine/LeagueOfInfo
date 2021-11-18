@@ -1,9 +1,9 @@
-import androidx.compose.foundation.Image
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.useResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import kotlinx.serialization.json.*
@@ -148,7 +148,7 @@ class Game {
                 val response = try {
                     client.send(request, HttpResponse.BodyHandlers.ofString())
                 } catch (e: Exception) {
-                    if(e is java.net.ConnectException){
+                    if (e is java.net.ConnectException) {
                         isFinished = true
                         break
                     } else {
@@ -231,7 +231,7 @@ class Game {
                                 killer.summoner.kda.addKill(victim.summoner)
 
                                 val lastKD = killDifference[killDifference.lastIndex]
-                                val newKD = lastKD + if(killer.team == Team.ORDER) 1 else -1
+                                val newKD = lastKD + if (killer.team == Team.ORDER) 1 else -1
                                 killDifference.add(newKD)
 
                                 maxKillDifference = max(maxKillDifference, newKD.absoluteValue)
@@ -319,11 +319,23 @@ open class Entity {
 
     open val team = Team.UNKNOWN
 
-    var icon: Any? by mutableStateOf(null)
+    open var icon: Any? by mutableStateOf(null)
 
     @Composable
     open fun getIcon() {
         icon = painterResource("Icons/missing_square.png")
+    }
+}
+
+private val summonerIconMap = mutableMapOf<String, SummonerIconInfo>()
+
+class SummonerIconInfo(championName: String, setIcon: (ImageBitmap) -> Unit) {
+    var loading = false
+    var image = mutableStateOf(useResource("Icons/missing_square.png") { loadImageBitmap(it) })
+    init {
+        loading = true
+        image = mutableStateOf(loadNetworkImage("http://ddragon.leagueoflegends.com/cdn/11.21.1/img/champion/${championName}.png"))
+        setIcon(image.value)
     }
 }
 
@@ -333,13 +345,21 @@ class SummonerEntity(val summoner: Summoner) : Entity() {
     override val team = summoner.team
     val name = summoner.name
 
-    var championIcon: ImageBitmap? by mutableStateOf(null);
+    var championIcon: ImageBitmap by mutableStateOf(useResource("Icons/missing_square.png") { loadImageBitmap(it) })
+    override var icon: Any? by mutableStateOf(championIcon)
+
+    init {
+        if (summonerIconMap[summoner.championName] == null) {
+            summonerIconMap[summoner.championName] = SummonerIconInfo(summoner.championName) { icon = it }
+        }
+        championIcon = summonerIconMap[summoner.championName]!!.image.value
+        icon = championIcon
+    }
 
     @Composable
     override fun getIcon() {
         CoroutineScope(Dispatchers.Main).launch {
-            championIcon =
-                loadNetworkImage("http://ddragon.leagueoflegends.com/cdn/11.21.1/img/champion/${summoner.championName}.png")
+
             icon = championIcon
         }
     }
@@ -416,6 +436,8 @@ class MonsterEntity(monsterName: String) : Entity() {
         else if (monsterName.contains("Earth")) MonsterType.DRAGON_EARTH
         else if (monsterName.contains("Fire")) MonsterType.DRAGON_FIRE
         else if (monsterName.contains("Water")) MonsterType.DRAGON_WATER
+        else if (monsterName.contains("Hextech")) MonsterType.DRAGON_HEXTECH
+        else if (monsterName.contains("Chemtech")) MonsterType.DRAGON_CHEMTECH
         else if (monsterName.contains("Baron")) MonsterType.BARON
         else {
             println(monsterName)
@@ -450,6 +472,16 @@ class MonsterEntity(monsterName: String) : Entity() {
         DRAGON_WATER {
             override fun toString(): String {
                 return "dragon_water"
+            }
+        },
+        DRAGON_HEXTECH {
+            override fun toString(): String {
+                return "dragon_hextech"
+            }
+        },
+        DRAGON_CHEMTECH {
+            override fun toString(): String {
+                return "dragon_chemtech"
             }
         },
         BARON {
