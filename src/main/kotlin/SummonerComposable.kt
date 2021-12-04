@@ -6,17 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -50,14 +45,10 @@ fun SummonerComposable(
             modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
         ) {
             val championIcon = summoner.entity.championIcon
-            if (championIcon != null) {
-                Image(
-                    championIcon, "image",
-                    modifier = Modifier.height(50.dp)
-                )
-            } else {
-                summoner.entity.getIcon()
-            }
+            Image(
+                championIcon, "image",
+                modifier = Modifier.height(50.dp)
+            )
             Spacer(Modifier.width(8.dp))
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,

@@ -4,11 +4,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.5.31"
-    id("org.jetbrains.compose") version "1.0.0-beta5"
+    id("org.jetbrains.compose") version "1.0.0"
     kotlin("plugin.serialization") version "1.5.31"
 }
 
-group = "de.mrpine"
+group = "de.mr-pine"
 version = "1.0"
 
 repositories {
@@ -19,16 +19,16 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.5.2-native-mt")
-    implementation("org.jetbrains.compose.ui:ui-util-desktop:1.0.0-beta5")
+    implementation("org.jetbrains.compose.ui:ui-util-desktop:1.0.0")
     implementation("com.google.code.gson:gson:2.8.9")
 
 
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
 }
 
@@ -38,7 +38,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "LeagueOfInfo"
-            packageVersion = "0.9.2"
+            packageVersion = "1.0.1"
             description = "An application to see more info about your League of Legends game"
             vendor = "Mr. Pine"
             windows{

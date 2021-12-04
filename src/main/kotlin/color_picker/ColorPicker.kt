@@ -195,9 +195,7 @@ private fun Magnifier(visible: Boolean, position: Offset, color: Color) {
     }
     Popup {
         MagnifierTransition(
-            visible,
-            MagnifierWidth,
-            SelectionCircleDiameter
+            visible
         ) { labelWidth: Dp, selectionDiameter: Dp,
             alpha: Float ->
             Column(
@@ -224,23 +222,17 @@ private val MagnifierHeight = 90.dp
 private val MagnifierLabelHeight = 50.dp
 private val SelectionCircleDiameter = 30.dp
 
-/**
- * [Transition] that animates between [visible] states of the magnifier by animating the width of
- * the label, diameter of the selection circle, and alpha of the overall magnifier
- */
 @Composable
 private fun MagnifierTransition(
     visible: Boolean,
-    maxWidth: Dp,
-    maxDiameter: Dp,
     content: @Composable (labelWidth: Dp, selectionDiameter: Dp, alpha: Float) -> Unit
 ) {
     val transition = updateTransition(visible)
     val labelWidth by transition.animateDp(transitionSpec = { tween() }) {
-        if (it) maxWidth else 0.dp
+        if (it) MagnifierWidth else 0.dp
     }
     val magnifierDiameter by transition.animateDp(transitionSpec = { tween() }) {
-        if (it) maxDiameter else 0.dp
+        if (it) SelectionCircleDiameter else 0.dp
     }
     val alpha by transition.animateFloat(
         transitionSpec = {
@@ -359,8 +351,6 @@ private fun ColorWheel.colorForPosition(position: Offset): Color {
     val y = position.y.toInt().coerceAtLeast(0)
     with(image.toPixelMap()) {
         if (x >= width || y >= height) return Color.Unspecified
-        val relX = position.x.coerceAtLeast(0f) - width / 2
-        val relY = position.y.coerceAtLeast(0f) - width / 2
         return this[x, y].takeIf { it.alpha == 1f } ?: Color.Unspecified
     }
 }

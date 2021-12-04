@@ -1,6 +1,5 @@
 package settings
 
-import androidx.compose.material.SwitchColors
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.useResource
 import com.google.gson.Gson
@@ -9,9 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import java.io.File
 
 data class Settings(
@@ -31,12 +27,12 @@ data class ColorSettings(
 )
 
 class SettingsSaver(setColor: (Color) -> Unit, setContrast: (Float) -> Unit, setSwitchColors: (Boolean) -> Unit) {
-    var counter = 3
-    var counting = false
+    private var counter = 3
+    private var counting = false
 
-    val gson = Gson()
+    private val gson = Gson()
 
-    var settings: Settings
+    private var settings: Settings
 
     private val settingsFile = File("${System.getenv("APPDATA")}/LeagueOfInfo/settings.json")
 
@@ -70,11 +66,11 @@ class SettingsSaver(setColor: (Color) -> Unit, setContrast: (Float) -> Unit, set
         settingsFile.writeText(gson.toJson(settings))
     }
 
-    fun resetCounter() {
+    private fun resetCounter() {
         counter = 3
     }
 
-    fun startCounter() {
+    private fun startCounter() {
         resetCounter()
         if(!counting) {
             counting = true

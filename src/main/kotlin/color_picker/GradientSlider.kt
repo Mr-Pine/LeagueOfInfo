@@ -105,7 +105,7 @@ fun GradientSlider(
 
         val gestureEndAction = rememberUpdatedState<(Float) -> Unit> { velocity: Float ->
             val current = rawOffset.value
-            // target is a closest anchor to the `current`, if exists
+            // target is the closest anchor to the `current`, if exists
             val target = tickFractions
                 .minByOrNull { abs(lerp(minPx, maxPx, it) - current) }
                 ?.run { lerp(minPx, maxPx, this) }
@@ -137,28 +137,24 @@ fun GradientSlider(
             state = draggableState
         )
 
-        val scrollableState = rememberScrollableState { delta ->
+        /*val scrollableState = rememberScrollableState { delta ->
 
             scope.launch {
-                /*draggableState.drag(MutatePriority.UserInput) {
-                    dragBy(2 * delta)
-                }*/
                 rawOffset.value += delta * 2
                 rawOffset.value = rawOffset.value.coerceIn(minPx, maxPx)
                 onValueChangeState.value.invoke(scaleToUserValue(rawOffset.value))
             }
 
             delta
-        }
+        }*/
 
         val coerced = value.coerceIn(valueRange.start, valueRange.endInclusive)
         val fraction = calcFraction(valueRange.start, valueRange.endInclusive, coerced)
 
-        Box(/*modifier = Modifier.scrollable(scrollableState, Orientation.Vertical)*/) {
+        Box {
             GradientSliderImpl(
                 enabled,
                 fraction,
-                tickFractions,
                 currentColor,
                 maxPx,
                 interactionSource,
@@ -174,7 +170,6 @@ fun GradientSlider(
 private fun GradientSliderImpl(
     enabled: Boolean,
     positionFraction: Float,
-    tickFractions: List<Float>,
     currentColor: Color,
     width: Float,
     interactionSource: MutableInteractionSource,
@@ -198,7 +193,6 @@ private fun GradientSliderImpl(
         }
         GradientTrack(
             center.fillMaxSize(),
-            currentColor,
             thumbPx,
             trackStrokeWidth,
             brush
@@ -268,7 +262,7 @@ private fun Modifier.sliderSemantics(
                 if (resolvedValue == coerced) {
                     false
                 } else {
-                    onValueChange(resolvedValue as Float)
+                    onValueChange(resolvedValue)
                     true
                 }
             }
@@ -369,7 +363,6 @@ private fun Modifier.sliderPressModifier(
 @Composable
 private fun GradientTrack(
     modifier: Modifier,
-    currentColor: Color,
     thumbPx: Float,
     trackStrokeWidth: Float,
     brush: Brush

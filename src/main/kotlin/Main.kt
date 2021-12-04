@@ -1,16 +1,16 @@
-// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.awt.awtEvent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -19,14 +19,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.*
-import color_picker.ColorPickerWidget
 import design.darken
 import design.getLegibleTextColor
 import design.withLightness
 import info_elements.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.jetbrains.skia.Image.Companion.makeFromEncoded
 import settings.SettingsSaver
 import java.awt.Desktop
@@ -38,8 +34,6 @@ import java.net.URL
 import javax.imageio.ImageIO
 import kotlin.math.sqrt
 
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 @Preview
 fun App(
@@ -215,7 +209,6 @@ fun loadNetworkImage(link: String): ImageBitmap {
 
 var mainColor by mutableStateOf(Color(0xFF275682))
 
-@ExperimentalFoundationApi
 @Composable
 fun UICard(
     modifier: Modifier = Modifier,
@@ -249,8 +242,8 @@ fun UICard(
             .fillMaxWidth()
             .then(if (separable) Modifier.pointerInput(Unit) {
                 while (true) {
-                    val lastMouseEvent = awaitPointerEventScope { awaitPointerEvent() }.mouseEvent
-                    if (lastMouseEvent != null && lastMouseEvent.isPopupTrigger) {
+                    val lastMouseEvent = awaitPointerEventScope { awaitPointerEvent() }.awtEvent
+                    if (lastMouseEvent.isPopupTrigger) {
                         showPopup = true
                         latestMousePosition = lastMouseEvent.point
                     }
@@ -329,5 +322,4 @@ data class AppInfo(
     val switchTeamColors: Boolean,
     val localDensity: Density,
     val setSwitchTeamColors: (Boolean) -> Unit
-) {
-}
+)

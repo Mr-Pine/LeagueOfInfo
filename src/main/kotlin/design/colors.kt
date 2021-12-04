@@ -3,11 +3,7 @@ package design
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
-import kotlin.math.max
 import kotlin.math.sqrt
-
-val blue = Color(0xFF003870)
-val blue_light = Color(0xFF047ac9)
 
 fun Color.darken(contrast: Float = 0.5f): Color {
 

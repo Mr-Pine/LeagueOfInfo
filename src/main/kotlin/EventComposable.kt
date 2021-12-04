@@ -26,8 +26,7 @@ fun EventComposable(event: ActionEvent, colorCHAOS: Color, colorORDER: Color, su
             }
         ).padding(8.dp)
     ) {
-        Row(
-        ) {
+        Row {
             val killerIcon = event.killer.icon
             if (killerIcon != null && killerIcon is ImageBitmap) {
                 Image(killerIcon, "icon", modifier = Modifier.height(50.dp).then(if(summonerSelected == (event.killer as SummonerEntity).name) Modifier.border(2.dp, Color.Yellow) else Modifier))

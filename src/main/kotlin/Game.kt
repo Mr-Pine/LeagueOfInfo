@@ -4,8 +4,11 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.useResource
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.*
 import java.net.URI
 import java.net.http.HttpClient
@@ -13,7 +16,6 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
-import java.util.*
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
@@ -24,7 +26,7 @@ import kotlin.math.max
 
 class Game {
     private val scope = CoroutineScope(Dispatchers.Default)
-    var gameStarted by mutableStateOf(false)
+    private var gameStarted by mutableStateOf(false)
 
     var activeTeam by mutableStateOf(Team.UNKNOWN)
 
@@ -79,8 +81,7 @@ class Game {
         try {
             sc.init(null, trustAllCerts, SecureRandom())
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)
-        } catch (e: Exception) {
-        }
+        } catch (_: Exception) {}
         //</editor-fold>
 
         val client = HttpClient.newBuilder().sslContext(sc).build()
@@ -100,8 +101,7 @@ class Game {
                     }
 
                     println(response.body())
-                } catch (e: Exception) {
-                }
+                } catch (_: Exception) {}
             }
             val responseObject = responseJson.jsonObject
             val activePlayerName = responseObject["activePlayer"]!!.jsonObject["summonerName"]
@@ -118,10 +118,6 @@ class Game {
                 val championDisplayName = player["championName"]!!.jsonPrimitive.content
                 val championName = player["rawChampionName"]!!.jsonPrimitive.content.substring(27)
                 val team = player["team"]!!.jsonPrimitive.content
-                /*val team = "ORDER"
-                val summonerName = "Mr. Pine"
-                val championDisplayName = "Sivir"
-                val championName = "Sivir"*/
                 (if (team == "ORDER") players.order else players.chaos).add(
                     Summoner(
                         name = summonerName,
@@ -213,18 +209,17 @@ class Game {
                             assisters.add(assister)
                         }
 
-                        val team =
-                            if (killer is SummonerEntity) {
-                                killer.summoner.team
-                            } else if (killer is MinionEntity) {
-                                killer.team
-                            } else if (killer is TurretEntity) {
-                                killer.team
-                            } else if (victim is SummonerEntity) {
-                                if (victim.summoner.team == Team.ORDER) Team.CHAOS else Team.ORDER
-                            } else {
-                                Team.UNKNOWN
-                            }
+                        if (killer is SummonerEntity) {
+                            killer.summoner.team
+                        } else if (killer is MinionEntity) {
+                            killer.team
+                        } else if (killer is TurretEntity) {
+                            killer.team
+                        } else if (victim is SummonerEntity) {
+                            if (victim.summoner.team == Team.ORDER) Team.CHAOS else Team.ORDER
+                        } else {
+                            Team.UNKNOWN
+                        }
 
                         if (victim is SummonerEntity) {
                             if (killer is SummonerEntity) {
@@ -249,10 +244,8 @@ class Game {
                         events.add(
                             0,
                             ActionEvent(
-                                eventType = eventType,
                                 killer = killer,
                                 assisters = assisters.toTypedArray(),
-                                team = team,
                                 victim = victim
                             )
                         )
@@ -277,8 +270,8 @@ class Summoner(val name: String, val championName: String, val championDisplayNa
     val entity = SummonerEntity(this)
 }
 
-class KDAData() {
-    var kills by mutableStateOf(0);
+class KDAData {
+    var kills by mutableStateOf(0)
     var deaths by mutableStateOf(0)
     var assists by mutableStateOf(0)
 }
@@ -330,7 +323,7 @@ open class Entity {
 private val summonerIconMap = mutableMapOf<String, SummonerIconInfo>()
 
 class SummonerIconInfo(championName: String, setIcon: (ImageBitmap) -> Unit) {
-    var loading = false
+    private var loading = false
     var image = mutableStateOf(useResource("Icons/missing_square.png") { loadImageBitmap(it) })
     init {
         loading = true
@@ -380,12 +373,12 @@ class MinionEntity(minionName: String) : Entity() {
         SUPER, NORMAL
     }
 
-    var unitIcon: Painter? = null
+    private var unitIcon: Painter? = null
 
     @Composable
     override fun getIcon() {
         unitIcon =
-            painterResource("Icons/${if (team == Team.ORDER) "blue" else "red"}${""/*if(minionType == MinionType.SUPER) "mech" else ""*/}melee_square.png")
+            painterResource("Icons/${if (team == Team.ORDER) "blue" else "red"}melee_square.png")
         icon = unitIcon
     }
 }
@@ -399,7 +392,7 @@ class TurretEntity(turretName: String) : Entity() {
         team = if (turretName.contains("T1")) Team.ORDER else Team.CHAOS
     }
 
-    var unitIcon: Painter? = null
+    private var unitIcon: Painter? = null
 
     @Composable
     override fun getIcon() {
@@ -417,7 +410,7 @@ class InhibEntity(inhibName: String) : Entity() {
         team = if (inhibName.contains("T1")) Team.ORDER else Team.CHAOS
     }
 
-    var unitIcon: Painter? = null
+    private var unitIcon: Painter? = null
 
     @Composable
     override fun getIcon() {
@@ -427,9 +420,9 @@ class InhibEntity(inhibName: String) : Entity() {
 }
 
 class MonsterEntity(monsterName: String) : Entity() {
-    override val type = EntityType.TURRET
+    override val type = EntityType.MONSTER
 
-    val monsterType: MonsterType
+    private val monsterType: MonsterType
 
     init {
         monsterType = if (monsterName.contains("Air")) MonsterType.DRAGON_AIR
@@ -445,7 +438,7 @@ class MonsterEntity(monsterName: String) : Entity() {
         }
     }
 
-    var unitIcon: Painter? = null
+    private var unitIcon: Painter? = null
 
     @Composable
     override fun getIcon() {

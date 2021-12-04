@@ -3,12 +3,11 @@ package info_elements
 import AppInfo
 import DropdownSummoner
 import EventComposable
-import Game
 import KDAData
 import SummonerComposable
+import Team
 import UICard
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,6 +16,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.awtEvent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -64,8 +64,8 @@ val playerList = InfoElement("Player List") @Composable { appInfo, isSeparated, 
             .then(if (!isSeparated) Modifier.padding(bottom = 8.dp, end = 12.dp, start = 4.dp) else Modifier)
             .then(if (!isSeparated) Modifier.pointerInput(Unit) {
                 while (true) {
-                    val lastMouseEvent = awaitPointerEventScope { awaitPointerEvent() }.mouseEvent
-                    if (lastMouseEvent != null && lastMouseEvent.isPopupTrigger) {
+                    val lastMouseEvent = awaitPointerEventScope { awaitPointerEvent() }.awtEvent
+                    if (lastMouseEvent.isPopupTrigger) {
                         showPopup = true
                         latestMousePosition = lastMouseEvent.point
                     }
@@ -94,7 +94,7 @@ val playerList = InfoElement("Player List") @Composable { appInfo, isSeparated, 
                 Text("show separated")
             }
         }
-        Row() {
+        Row {
             Column(
                 modifier = Modifier.fillMaxWidth().weight(1f).background(appInfo.orderColor)
             ) {
@@ -151,7 +151,6 @@ val playerList = InfoElement("Player List") @Composable { appInfo, isSeparated, 
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 val settings = InfoElement("Settings") @Composable { appInfo, isSeparated, singleContent ->
     UICard(
         modifier = Modifier.fillMaxWidth(),
@@ -244,7 +243,6 @@ val settings = InfoElement("Settings") @Composable { appInfo, isSeparated, singl
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 val laneKDA = InfoElement("Lane KDA") @Composable { appInfo, isSeparated, singleContent ->
     UICard(
         title = "Lane KDA", titleColor = mainColor.darken(appInfo.contrast / 1.5f),
@@ -295,7 +293,6 @@ val laneKDA = InfoElement("Lane KDA") @Composable { appInfo, isSeparated, single
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 val oneVsAllKDA = InfoElement("One vs all KDA") @Composable { appInfo, isSeparated, singleContent ->
     UICard(
         title = "One vs all KDA", titleColor = mainColor.darken(appInfo.contrast / 1.5f),
@@ -398,7 +395,6 @@ val oneVsAllKDA = InfoElement("One vs all KDA") @Composable { appInfo, isSeparat
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 val events = InfoElement("Events") @Composable { appInfo, isSeparated, singleContent ->
     UICard(
         title = "Events",
@@ -421,7 +417,6 @@ val events = InfoElement("Events") @Composable { appInfo, isSeparated, singleCon
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 val killDifferenceGraph = InfoElement("Kill Difference") { appInfo, isSeparated, singleContent ->
     UICard(
         modifier = Modifier.height(500.dp),
